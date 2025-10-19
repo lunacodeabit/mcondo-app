@@ -12,8 +12,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Unit } from "@/lib/definitions";
-// TODO: Create UnitForm
-// import { UnitForm } from "./_components/unit-form";
+import { UnitForm } from "./_components/unit-form";
+import { useRouter } from 'next/navigation';
 
 export default function UnitsPage() {
   const { condo, saveUnit, deleteUnit } = useCondo();
@@ -21,11 +21,12 @@ export default function UnitsPage() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [unitToEdit, setUnitToEdit] = useState<Unit | undefined>(undefined);
   const [unitToDelete, setUnitToDelete] = useState<string | undefined>(undefined);
+  const router = useRouter();
+
 
   const handleOpenForm = (unit?: Unit) => {
-    // setUnitToEdit(unit);
-    // setFormModalOpen(true);
-    alert("Formulario de Unidades en desarrollo.");
+    setUnitToEdit(unit);
+    setFormModalOpen(true);
   };
 
   const handleCloseForm = () => {
@@ -33,23 +34,32 @@ export default function UnitsPage() {
     setFormModalOpen(false);
   }
 
-  const handleSave = (unit: Omit<Unit, 'id'> | Unit) => {
-    // saveUnit(unit);
+  const handleSave = (unit: Omit<Unit, 'id' | 'accountHistory' | 'managementHistory'> | Unit) => {
+    saveUnit(unit);
     handleCloseForm();
   };
 
   const handleOpenDeleteAlert = (unitId: string) => {
-    // setUnitToDelete(unitId);
-    // setDeleteAlertOpen(true);
-    alert("Funcionalidad para eliminar unidades en desarrollo.");
+    setUnitToDelete(unitId);
+    setDeleteAlertOpen(true);
   }
 
   const handleConfirmDelete = () => {
     if (unitToDelete) {
-      // deleteUnit(unitToDelete);
+      deleteUnit(unitToDelete);
     }
     setDeleteAlertOpen(false);
     setUnitToDelete(undefined);
+  }
+
+  const handleViewStatement = (unitId: string) => {
+     // This is a client-side navigation, but it's better to keep it simple for now.
+     // In a real app, you might pass state or use a more complex routing solution.
+     const accountsReceivableUrl = `/condo/${condo?.id}/accounts-receivable`;
+     // We can't directly open the modal, so we navigate to the page.
+     // A more advanced solution would involve global state management (like Zustand or Redux)
+     // or query parameters to trigger the modal on page load.
+     router.push(accountsReceivableUrl);
   }
 
   if (!condo) {
@@ -102,7 +112,7 @@ export default function UnitsPage() {
                                         <DropdownMenuItem onClick={() => handleOpenForm(unit)}>
                                             Editar Unidad
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleViewStatement(unit.id)}>
                                             Ver Estado de Cuenta
                                         </DropdownMenuItem>
                                         <DropdownMenuItem 
@@ -122,8 +132,7 @@ export default function UnitsPage() {
         </Card>
       </main>
       
-      {/* TODO: Implement UnitForm and uncomment dialogs */}
-      {/* <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}>
+      <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}>
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{unitToEdit ? 'Editar' : 'Agregar'} Unidad</DialogTitle>
@@ -131,11 +140,13 @@ export default function UnitsPage() {
               Complete los detalles de la propiedad y su residente.
             </DialogDescription>
           </DialogHeader>
-          <UnitForm 
-            onSubmit={handleSave} 
-            onCancel={handleCloseForm}
-            unit={unitToEdit}
-          />
+          <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6">
+            <UnitForm 
+                onSubmit={handleSave} 
+                onCancel={handleCloseForm}
+                unit={unitToEdit}
+            />
+          </div>
         </DialogContent>
       </Dialog>
       
@@ -152,9 +163,8 @@ export default function UnitsPage() {
             <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog> */}
+      </AlertDialog>
       
     </div>
   );
 }
-
