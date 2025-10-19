@@ -246,17 +246,24 @@ export function CondoProvider({
         return prevCondo;
       }
       
-      const newMovement: Omit<AccountMovement, 'id'> = {
+      const newMovement: AccountMovement = {
+          id: `ah-${new Date().getTime()}`,
           date: date,
           type: 'cuota_mensual',
           description: description,
           amount: unit.fees.monthlyFee,
       };
 
-      saveAccountMovement({ ...newMovement, unitId });
-      // The state will be updated inside saveAccountMovement, so we just return the current state here
-      // to avoid a double update. The logic inside saveAccountMovement will handle the state change.
-      return prevCondo;
+      const updatedUnits = prevCondo.units.map(u => {
+        if (u.id === unitId) {
+          const updatedHistory = [newMovement, ...(u.accountHistory || [])]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          return { ...u, accountHistory: updatedHistory };
+        }
+        return u;
+      });
+
+      return { ...prevCondo, units: updatedUnits };
     });
   };
 
