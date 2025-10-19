@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo } from 'react';
-import type { Condo, Transaction, Invoice, Supplier, AccountMovement, ManagementComment } from '@/lib/definitions';
+import type { Condo, Transaction, Invoice, Supplier, AccountMovement, ManagementComment, Unit } from '@/lib/definitions';
 
 interface CondoContextType {
   condo: Condo | null;
@@ -13,6 +13,8 @@ interface CondoContextType {
   deleteInvoice: (invoiceId: string) => void;
   saveSupplier: (supplier: Omit<Supplier, 'id'> | Supplier) => void;
   deleteSupplier: (supplierId: string) => void;
+  saveUnit: (unit: Omit<Unit, 'id'> | Unit) => void;
+  deleteUnit: (unitId: string) => void;
   saveAccountMovement: (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => void;
   addMonthlyFee: (unitId: string) => void;
   saveManagementComment: (unitId: string, comment: Omit<ManagementComment, 'id'>) => void;
@@ -155,6 +157,43 @@ export function CondoProvider({
     });
   };
   
+  const saveUnit = (unit: Omit<Unit, 'id'> | Unit) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      
+      let updatedUnits: Unit[];
+
+      if ('id' in unit) {
+        // Editing existing unit
+        updatedUnits = prevCondo.units.map(u => u.id === unit.id ? { ...u, ...unit } : u);
+      } else {
+        // Adding new unit
+        const newUnit: Unit = {
+          ...unit,
+          id: `u-${new Date().getTime()}`,
+          accountHistory: [],
+          managementHistory: [],
+        };
+        updatedUnits = [newUnit, ...prevCondo.units];
+      }
+      
+      return {
+        ...prevCondo,
+        units: updatedUnits,
+      };
+    });
+  };
+
+  const deleteUnit = (unitId: string) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      return {
+        ...prevCondo,
+        units: prevCondo.units.filter(u => u.id !== unitId),
+      };
+    });
+  };
+  
   const saveAccountMovement = (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => {
     setCondo(prevCondo => {
         if (!prevCondo) return null;
@@ -250,6 +289,8 @@ export function CondoProvider({
     deleteInvoice,
     saveSupplier,
     deleteSupplier,
+    saveUnit,
+    deleteUnit,
     saveAccountMovement,
     addMonthlyFee,
     saveManagementComment,
