@@ -48,17 +48,16 @@ export function AdminSidebar() {
     <>
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-between p-2">
-            <Logo textColor="text-primary-foreground" />
-            <div className="hidden group-data-[state=expanded]:block">
+            <div className="group-data-[state=expanded]:block hidden">
+              <Logo textColor="text-primary-foreground" />
+            </div>
+            <div className="hidden md:block">
                 <SidebarTrigger />
             </div>
         </div>
         <div className="p-2 group-data-[state=expanded]:block hidden">
             <h3 className="font-headline text-lg text-primary-foreground">{condo?.name}</h3>
             <p className="text-xs text-sidebar-foreground">{condo?.address}</p>
-        </div>
-         <div className="p-2 hidden group-data-[state=collapsed]:block">
-            <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
