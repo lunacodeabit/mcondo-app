@@ -1,220 +1,89 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces role-based access control for a condominium management application.
- *
- * Core Philosophy:
- * The security model is based on role-based access control at the condominium level.
- * Access to data within a condominium (units, financial transactions, etc.) is restricted to condominium administrators.
- * All collections are secured with role-based access and require valid authentication.
- *
- * Data Structure:
- * - /condominiums/{condominiumId}: Stores general condominium information.
- * - /condominiums/{condominiumId}/units/{unitId}: Stores unit information.
- * - /condominiums/{condominiumId}/financial_transactions/{transactionId}: Stores financial transactions.
- * - /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}: Stores accounts receivable.
- * - /condominiums/{condominiumId}/accounts_payable/{accountPayableId}: Stores accounts payable.
- * - /condominiums/{condominiumId}/suppliers/{supplierId}: Stores supplier information.
- * - /condominiums/{condominiumId}/employees/{employeeId}: Stores employee information.
- * - /condominiums/{condominiumId}/communications/{communicationId}: Stores communications/announcements.
- * - /condominiums/{condominiumId}/incidents/{incidentId}: Stores incident reports.
- *
- * Key Security Decisions:
- * - Access to all data within a condominium is controlled by membership in a role collection (e.g., `/roles_condominium_admin/{uid}`) or a membership map on the condominium document itself.
- * - The rules do not currently enforce strong schema validation to allow for rapid iteration.
- *
- * Denormalization for Authorization:
- * - Each document in subcollections under `/condominiums/{condominiumId}` includes the `condominiumId` field. This denormalization avoids the need for `get()` calls to verify the document's location and simplifies the security rules.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Checks if the user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
+    function isAdmin(condominiumId) {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid)) 
+      && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.condominiumId == condominiumId;
     }
 
-    /**
-     * @description Checks if the user is an administrator for the given condominium.
-     * @details This implementation is a placeholder. A more robust implementation would
-     * check against a roles collection or a membership map on the condominium document.
-     * @param {string} condominiumId - The ID of the condominium.
-     * @return {bool} True if the user is an admin, false otherwise.
-     */
-    function isCondominiumAdmin(condominiumId) {
-      // TODO: Implement proper role checking against a roles collection or membership map.
-      return false;
-    }
-
-    /**
-     * @description Enforces that the incoming `condominiumId` matches the path.
-     * @param {string} condominiumId The condominium ID from the path.
-     * @return {bool} True if the incoming resource data contains a matching `condominiumId`, false otherwise.
-     */
-    function requestHasValidCondominiumId(condominiumId) {
-        return request.resource.data.condominiumId == condominiumId;
-    }
-
-    /**
-     * @description Checks if the user is signed in and is a condominium admin.
-     */
-    function isCondominiumAdminSignedIn(condominiumId) {
-        return isSignedIn() && isCondominiumAdmin(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId} collection.
-     * @path /condominiums/{condominiumId}
-     * @allow (get) Allow anyone to read condominium information.
-     * @allow (create) Allow condominium admins to create new condominiums.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control at the condominium level.
-     */
     match /condominiums/{condominiumId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isCondominiumAdminSignedIn(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId);
+      allow get: if request.auth != null;
+      allow list: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && isAdmin(condominiumId);
+
+      match /units/{unitId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /financial_transactions/{transactionId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /accounts_receivable/{accountReceivableId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /accounts_payable/{accountPayableId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /suppliers/{supplierId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /employees/{employeeId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /communications/{communicationId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null && isAdmin(condominiumId);
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
+
+      match /incidents/{incidentId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && isAdmin(condominiumId);
+        allow delete: if request.auth != null && isAdmin(condominiumId);
+      }
     }
 
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/units/{unitId} collection.
-     * @path /condominiums/{condominiumId}/units/{unitId}
-     * @allow (get) Allow anyone to read unit information within a condominium.
-     * @allow (create) Allow condominium admins to create new units within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity at the unit level.
-     */
-    match /condominiums/{condominiumId}/units/{unitId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/financial_transactions/{transactionId} collection.
-     * @path /condominiums/{condominiumId}/financial_transactions/{transactionId}
-     * @allow (get) Allow anyone to read financial transaction information within a condominium.
-     * @allow (create) Allow condominium admins to create new financial transactions within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for financial transactions.
-     */
-    match /condominiums/{condominiumId}/financial_transactions/{transactionId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId} collection.
-     * @path /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}
-     * @allow (get) Allow anyone to read accounts receivable information within a condominium.
-     * @allow (create) Allow condominium admins to create new accounts receivable entries within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for accounts receivable.
-     */
-    match /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/accounts_payable/{accountPayableId} collection.
-     * @path /condominiums/{condominiumId}/accounts_payable/{accountPayableId}
-     * @allow (get) Allow anyone to read accounts payable information within a condominium.
-     * @allow (create) Allow condominium admins to create new accounts payable entries within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for accounts payable.
-     */
-    match /condominiums/{condominiumId}/accounts_payable/{accountPayableId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/suppliers/{supplierId} collection.
-     * @path /condominiums/{condominiumId}/suppliers/{supplierId}
-     * @allow (get) Allow anyone to read supplier information within a condominium.
-     * @allow (create) Allow condominium admins to create new suppliers within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for suppliers.
-     */
-    match /condominiums/{condominiumId}/suppliers/{supplierId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/employees/{employeeId} collection.
-     * @path /condominiums/{condominiumId}/employees/{employeeId}
-     * @allow (get) Allow anyone to read employee information within a condominium.
-     * @allow (create) Allow condominium admins to create new employees within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for employees.
-     */
-    match /condominiums/{condominiumId}/employees/{employeeId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/communications/{communicationId} collection.
-     * @path /condominiums/{condominiumId}/communications/{communicationId}
-     * @allow (get) Allow anyone to read communication information within a condominium.
-     * @allow (create) Allow condominium admins to create new communications within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for communications.
-     */
-    match /condominiums/{condominiumId}/communications/{communicationId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-    }
-
-    /**
-     * @description Rules for the /condominiums/{condominiumId}/incidents/{incidentId} collection.
-     * @path /condominiums/{condominiumId}/incidents/{incidentId}
-     * @allow (get) Allow anyone to read incident information within a condominium.
-     * @allow (create) Allow condominium admins to create new incidents within a condominium, validating the condominiumId.
-     * @deny (update) Deny updates from non-admins.
-     * @deny (delete) Deny deletes from non-admins.
-     * @principle Enforces role-based access control and data integrity for incidents.
-     */
-    match /condominiums/{condominiumId}/incidents/{incidentId} {
-      allow get: if true;
-      allow list: if isCondominiumAdmin(condominiumId);
-      allow create: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow update: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
-      allow delete: if isCondominiumAdminSignedIn(condominiumId) && requestHasValidCondominiumId(condominiumId);
+    match /admins/{adminId} {
+        allow get: if request.auth.uid == adminId;
+        allow create: if request.auth.uid == adminId;
+        allow update: if request.auth.uid == adminId;
+        allow delete: if request.auth.uid == adminId;
     }
   }
 }
