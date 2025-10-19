@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,28 +9,51 @@ import type { Incident } from "@/lib/definitions";
 import { PageHeader } from "../_components/page-header";
 import { StatusBadge } from "../_components/status-badge";
 import { PriorityBadge } from "./_components/priority-badge";
+import { IncidentForm } from "./_components/incident-form";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 
 
 export default function IncidentsPage() {
-  const { condo } = useCondo();
+  const { condo, saveIncident, deleteIncident } = useCondo();
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [incidentToEdit, setIncidentToEdit] = useState<Incident | undefined>(undefined);
   const [incidentToDelete, setIncidentToDelete] = useState<string | undefined>(undefined);
   
   const handleOpenForm = (incident?: Incident) => {
-    // setIncidentToEdit(incident);
-    // setFormModalOpen(true);
-    alert('Funcionalidad de formulario en desarrollo');
+    setIncidentToEdit(incident);
+    setFormModalOpen(true);
   };
+
+  const handleCloseForm = () => {
+    setIncidentToEdit(undefined);
+    setFormModalOpen(false);
+  }
+
+  const handleSave = (incident: Omit<Incident, 'id'> | Incident) => {
+    saveIncident(incident);
+    handleCloseForm();
+  };
+
+  const handleOpenDeleteAlert = (incidentId: string) => {
+    setIncidentToDelete(incidentId);
+    setDeleteAlertOpen(true);
+  }
+
+  const handleConfirmDelete = () => {
+    if (incidentToDelete) {
+      deleteIncident(incidentToDelete);
+    }
+    setDeleteAlertOpen(false);
+    setIncidentToDelete(undefined);
+  }
 
   if (!condo) {
     return <div>Cargando...</div>;
@@ -82,11 +106,10 @@ export default function IncidentsPage() {
                           <DropdownMenuItem onClick={() => handleOpenForm(incident)}>
                             Ver / Editar Incidente
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Cambiar Estado
-                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             className="text-red-500 focus:text-red-500 focus:bg-red-50"
+                            onClick={() => handleOpenDeleteAlert(incident.id)}
                             >
                             Eliminar
                           </DropdownMenuItem>
@@ -100,6 +123,39 @@ export default function IncidentsPage() {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{incidentToEdit ? 'Editar' : 'Reportar'} Incidente</DialogTitle>
+            <DialogDescription>
+              Complete los detalles del incidente para su seguimiento.
+            </DialogDescription>
+          </DialogHeader>
+          <IncidentForm 
+            onSubmit={handleSave} 
+            onCancel={handleCloseForm}
+            incident={incidentToEdit}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro que desea eliminar este incidente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el registro del incidente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
+

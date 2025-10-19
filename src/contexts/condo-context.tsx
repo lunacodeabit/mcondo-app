@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo } from 'react';
-import type { Condo, Transaction, Invoice, Supplier, AccountMovement, ManagementComment, Unit } from '@/lib/definitions';
+import type { Condo, Transaction, Invoice, Supplier, AccountMovement, ManagementComment, Unit, Incident } from '@/lib/definitions';
 
 interface CondoContextType {
   condo: Condo | null;
@@ -18,6 +18,8 @@ interface CondoContextType {
   saveAccountMovement: (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => void;
   addMonthlyFee: (unitId: string) => void;
   saveManagementComment: (unitId: string, comment: Omit<ManagementComment, 'id'>) => void;
+  saveIncident: (incident: Omit<Incident, 'id'> | Incident) => void;
+  deleteIncident: (incidentId: string) => void;
 }
 
 const CondoContext = createContext<CondoContextType | undefined>(undefined);
@@ -169,7 +171,7 @@ export function CondoProvider({
       } else {
         // Adding new unit
         const newUnit: Unit = {
-          ...unit,
+          ...(unit as Omit<Unit, 'id'>),
           id: `u-${new Date().getTime()}`,
           accountHistory: [],
           managementHistory: [],
@@ -221,49 +223,48 @@ export function CondoProvider({
   
   const addMonthlyFee = (unitId: string) => {
     setCondo(prevCondo => {
-      if (!prevCondo) return null;
-      const unit = prevCondo.units.find(u => u.id === unitId);
-      if (!unit) return prevCondo;
+        if (!prevCondo) return prevCondo;
+        const unit = prevCondo.units.find(u => u.id === unitId);
+        if (!unit) return prevCondo;
 
-      const now = new Date();
-      // Logic to get the first day of the *next* month
-      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const monthName = nextMonthDate.toLocaleString('es-ES', { month: 'long' });
-      const year = nextMonthDate.getFullYear();
+        const now = new Date();
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const monthName = nextMonthDate.toLocaleString('es-ES', { month: 'long' });
+        const year = nextMonthDate.getFullYear();
 
-      const description = `Cuota de Mantenimiento ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
-      const date = nextMonthDate.toISOString();
-      
-      const feeExists = (unit.accountHistory || []).some(item => item.description === description);
+        const description = `Cuota de Mantenimiento ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+        const date = nextMonthDate.toISOString();
+        
+        const feeExists = (unit.accountHistory || []).some(item => item.description === description);
 
-      if (feeExists) {
-        alert(`La cuota para ${description} ya ha sido registrada.`);
-        return prevCondo;
-      }
-
-      if (unit.fees.monthlyFee <= 0) {
-        alert('La cuota mensual para esta unidad no está configurada.');
-        return prevCondo;
-      }
-      
-      const newMovement: AccountMovement = {
-          id: `ah-${new Date().getTime()}`,
-          date: date,
-          type: 'cuota_mensual',
-          description: description,
-          amount: unit.fees.monthlyFee,
-      };
-
-      const updatedUnits = prevCondo.units.map(u => {
-        if (u.id === unitId) {
-          const updatedHistory = [newMovement, ...(u.accountHistory || [])]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          return { ...u, accountHistory: updatedHistory };
+        if (feeExists) {
+            alert(`La cuota para ${description} ya ha sido registrada.`);
+            return prevCondo;
         }
-        return u;
-      });
+        
+        if (unit.fees.monthlyFee <= 0) {
+            alert('La cuota mensual para esta unidad no está configurada.');
+            return prevCondo;
+        }
+        
+        const newMovement: AccountMovement = {
+            id: `ah-${new Date().getTime()}`,
+            date: date,
+            type: 'cuota_mensual',
+            description: description,
+            amount: unit.fees.monthlyFee,
+        };
 
-      return { ...prevCondo, units: updatedUnits };
+        const updatedUnits = prevCondo.units.map(u => {
+            if (u.id === unitId) {
+                const updatedHistory = [newMovement, ...(u.accountHistory || [])]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                return { ...u, accountHistory: updatedHistory };
+            }
+            return u;
+        });
+
+        return { ...prevCondo, units: updatedUnits };
     });
   };
 
@@ -286,6 +287,41 @@ export function CondoProvider({
       });
   };
 
+  const saveIncident = (incident: Omit<Incident, 'id'> | Incident) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      
+      let updatedIncidents: Incident[];
+
+      if ('id' in incident) {
+        updatedIncidents = prevCondo.incidents.map(i => i.id === incident.id ? { ...i, ...incident } : i);
+      } else {
+        const newIncident: Incident = {
+          ...incident,
+          id: `inc-${new Date().getTime()}`,
+        };
+        updatedIncidents = [newIncident, ...prevCondo.incidents];
+      }
+      
+      const sortedIncidents = updatedIncidents.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return {
+        ...prevCondo,
+        incidents: sortedIncidents,
+      };
+    });
+  };
+
+  const deleteIncident = (incidentId: string) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      return {
+        ...prevCondo,
+        incidents: prevCondo.incidents.filter(i => i.id !== incidentId),
+      };
+    });
+  };
+
 
   const contextValue = useMemo(() => ({
     condo,
@@ -301,6 +337,8 @@ export function CondoProvider({
     saveAccountMovement,
     addMonthlyFee,
     saveManagementComment,
+    saveIncident,
+    deleteIncident,
   }), [condo]);
 
   return (
