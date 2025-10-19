@@ -50,7 +50,10 @@ export function AdminSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-between p-2">
             <Logo textColor="text-primary-foreground" />
-            <div className="group-data-[collapsible=icon]:hidden">
+            <div className="group-data-[state=collapsed]:block hidden sm:hidden">
+                <SidebarTrigger />
+            </div>
+            <div className="group-data-[collapsible=icon]:block hidden">
                 <SidebarTrigger />
             </div>
         </div>
