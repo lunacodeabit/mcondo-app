@@ -1,0 +1,521 @@
+{
+  "entities": {
+    "Condominium": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Condominium",
+      "type": "object",
+      "description": "Represents a condominium complex.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the condominium."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the condominium."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the condominium."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address"
+      ]
+    },
+    "Unit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Unit",
+      "type": "object",
+      "description": "Represents a unit within a condominium.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the unit."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N Unit)"
+        },
+        "unitNumber": {
+          "type": "string",
+          "description": "Unit number or identifier."
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Name of the unit owner."
+        },
+        "monthlyFee": {
+          "type": "number",
+          "description": "The standard monthly fee for the unit."
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "unitNumber",
+        "ownerName",
+        "monthlyFee"
+      ]
+    },
+    "FinancialTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialTransaction",
+      "type": "object",
+      "description": "Represents a financial transaction (income or expense).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N FinancialTransaction)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the transaction.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the transaction."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the transaction (positive or negative)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of transaction (e.g., 'income', 'expense')."
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "date",
+        "description",
+        "amount",
+        "type"
+      ]
+    },
+    "AccountReceivable": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AccountReceivable",
+      "type": "object",
+      "description": "Represents an account receivable entry for a unit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the account receivable entry."
+        },
+        "unitId": {
+          "type": "string",
+          "description": "Reference to Unit. (Relationship: Unit 1:N AccountReceivable)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the charge.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the charge."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the charge."
+        }
+      },
+      "required": [
+        "id",
+        "unitId",
+        "date",
+        "description",
+        "amount"
+      ]
+    },
+    "AccountPayable": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AccountPayable",
+      "type": "object",
+      "description": "Represents an account payable (invoice).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the invoice."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N AccountPayable)"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to Supplier. (Relationship: Supplier 1:N AccountPayable)"
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Invoice number."
+        },
+        "date": {
+          "type": "string",
+          "description": "Invoice date.",
+          "format": "date-time"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the invoice.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Invoice amount."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the invoice (e.g., 'pending', 'paid')."
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "supplierId",
+        "invoiceNumber",
+        "date",
+        "dueDate",
+        "amount",
+        "status"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the supplier."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N Supplier)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier."
+        },
+        "contactName": {
+          "type": "string",
+          "description": "Contact name for the supplier."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the supplier.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "name"
+      ]
+    },
+    "Employee": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Employee",
+      "type": "object",
+      "description": "Represents an employee.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the employee."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N Employee)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the employee."
+        },
+        "position": {
+          "type": "string",
+          "description": "Position of the employee."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the employee.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "name",
+        "position"
+      ]
+    },
+    "Communication": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Communication",
+      "type": "object",
+      "description": "Represents a communication or announcement.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the communication."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N Communication)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the communication.",
+          "format": "date-time"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject of the communication."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the communication."
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "date",
+        "subject",
+        "content"
+      ]
+    },
+    "Incident": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Incident",
+      "type": "object",
+      "description": "Represents an incident report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the incident."
+        },
+        "condominiumId": {
+          "type": "string",
+          "description": "Reference to Condominium. (Relationship: Condominium 1:N Incident)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the incident.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the incident."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the incident (e.g., 'open', 'closed')."
+        }
+      },
+      "required": [
+        "id",
+        "condominiumId",
+        "date",
+        "description",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/condominiums/{condominiumId}",
+        "definition": {
+          "entityName": "Condominium",
+          "schema": {
+            "$ref": "#/backend/entities/Condominium"
+          },
+          "description": "Stores general condominium information. Access control determined by condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/units/{unitId}",
+        "definition": {
+          "entityName": "Unit",
+          "schema": {
+            "$ref": "#/backend/entities/Unit"
+          },
+          "description": "Stores unit information, including the denormalized 'condominiumId'. Access control determined by owning condominium and potentially unit-level ownership.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "unitId",
+              "description": "The unique identifier for the unit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/financial_transactions/{transactionId}",
+        "definition": {
+          "entityName": "FinancialTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialTransaction"
+          },
+          "description": "Stores financial transaction data, including 'condominiumId'. Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the financial transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}",
+        "definition": {
+          "entityName": "AccountReceivable",
+          "schema": {
+            "$ref": "#/backend/entities/AccountReceivable"
+          },
+          "description": "Stores accounts receivable entries, including denormalized 'condominiumId'.  Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "accountReceivableId",
+              "description": "The unique identifier for the account receivable entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/accounts_payable/{accountPayableId}",
+        "definition": {
+          "entityName": "AccountPayable",
+          "schema": {
+            "$ref": "#/backend/entities/AccountPayable"
+          },
+          "description": "Stores accounts payable (invoices) data, including 'condominiumId'. Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "accountPayableId",
+              "description": "The unique identifier for the account payable (invoice)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier information, including 'condominiumId'. Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "supplierId",
+              "description": "The unique identifier for the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/employees/{employeeId}",
+        "definition": {
+          "entityName": "Employee",
+          "schema": {
+            "$ref": "#/backend/entities/Employee"
+          },
+          "description": "Stores employee information, including 'condominiumId'. Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/communications/{communicationId}",
+        "definition": {
+          "entityName": "Communication",
+          "schema": {
+            "$ref": "#/backend/entities/Communication"
+          },
+          "description": "Stores communications/announcements, including 'condominiumId'.  Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "communicationId",
+              "description": "The unique identifier for the communication/announcement."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/condominiums/{condominiumId}/incidents/{incidentId}",
+        "definition": {
+          "entityName": "Incident",
+          "schema": {
+            "$ref": "#/backend/entities/Incident"
+          },
+          "description": "Stores incident reports, including 'condominiumId'. Access control relies on condominium ownership/admin roles.",
+          "params": [
+            {
+              "name": "condominiumId",
+              "description": "The unique identifier for the condominium."
+            },
+            {
+              "name": "incidentId",
+              "description": "The unique identifier for the incident report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage condominium data, focusing on clarity, security, and scalability. Authorization Independence is achieved by storing condominiumId within each document in subcollections, eliminating the need for `get()` calls in security rules. This also enables atomic operations. Homogeneous Security Posture is maintained by ensuring each collection has a single data type with the same access controls.\n\n*   `/condominiums/{condominiumId}`: Stores general condominium information.  Access is controlled by membership in a dedicated collection like `/roles_condominium_admin/{uid}` or a membership map on the document itself.\n*   `/condominiums/{condominiumId}/units/{unitId}`: Stores unit information, including the `condominiumId`.  Access control is determined by the owning condominium and potentially unit-level ownership, but ownerName is stored on the document to enable filtering of Units by Owner\n*   `/condominiums/{condominiumId}/financial_transactions/{transactionId}`: Stores financial transaction data, including `condominiumId`. Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}`: Stores accounts receivable entries, with `condominiumId` denormalized.  Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/accounts_payable/{accountPayableId}`: Stores accounts payable (invoices) data, including `condominiumId`.  Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/suppliers/{supplierId}`: Stores supplier information, including `condominiumId`.  Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/employees/{employeeId}`: Stores employee information, including `condominiumId`.  Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/communications/{communicationId}`: Stores communications/announcements, including `condominiumId`.  Access control relies on condominium ownership/admin roles.\n*   `/condominiums/{condominiumId}/incidents/{incidentId}`: Stores incident reports, including `condominiumId`. Access control relies on condominium ownership/admin roles.\n\nThis design supports QAPs by structuring data into collections with clear authorization boundaries, allowing for efficient and secure list operations. Role-based access control can be implemented at the condominium level."
+  }
+}
