@@ -112,7 +112,9 @@ export function CondoProvider({
   useEffect(() => {
     // This is a temporary solution for seeding data for development.
     // In a production app, this would be handled by a backend script or a more robust mechanism.
-    seedDatabase(firestore);
+    if (process.env.NODE_ENV === 'development') {
+      seedDatabase(firestore);
+    }
   }, [firestore]);
 
 
@@ -123,29 +125,20 @@ export function CondoProvider({
   
   // Fetch subcollections
   const unitsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units'), [firestore, condoId]);
-  const { data: units, isLoading: areUnitsLoading } = useCollection<Unit>(unitsCollection);
+  const { data: units } = useCollection<Unit>(unitsCollection);
 
   const transactionsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'financial_transactions'), [firestore, condoId]);
-  const { data: transactions, isLoading: areTransactionsLoading } = useCollection<Transaction>(transactionsCollection);
+  const { data: transactions } = useCollection<Transaction>(transactionsCollection);
   
   const invoicesCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'accounts_payable'), [firestore, condoId]);
-  const { data: invoices, isLoading: areInvoicesLoading } = useCollection<Invoice>(invoicesCollection);
+  const { data: invoices } = useCollection<Invoice>(invoicesCollection);
   
   const suppliersCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'suppliers'), [firestore, condoId]);
-  const { data: suppliers, isLoading: areSuppliersLoading } = useCollection<Supplier>(suppliersCollection);
+  const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
 
   const incidentsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'incidents'), [firestore, condoId]);
-  const { data: incidents, isLoading: areIncidentsLoading } = useCollection<Incident>(incidentsCollection);
+  const { data: incidents } = useCollection<Incident>(incidentsCollection);
   
-  // This structure is more complex because units have subcollections themselves.
-  // For now, we will fetch them on demand inside the components, or adjust this later.
-  const unitsWithHistory = useMemo(() => {
-      // This is a simplified version. A real app might fetch subcollections here
-      // or within the component that needs them (`AccountStatementDetail`).
-      // For now, let's assume `useCollection` gives us what we need for the main lists.
-      return units || [];
-  }, [units]);
-
 
   const condo = useMemo((): Condo | null => {
     if (!condoData) return null;
@@ -155,7 +148,7 @@ export function CondoProvider({
           manualBalance: condoData.finances?.manualBalance || 0,
           transactions: transactions || [],
       },
-      units: unitsWithHistory || [],
+      units: units || [],
       accountsPayable: invoices || [],
       suppliers: suppliers || [],
       incidents: incidents || [],
@@ -163,9 +156,9 @@ export function CondoProvider({
       employees: [], 
       communications: [],
     };
-  }, [condoData, transactions, unitsWithHistory, invoices, suppliers, incidents]);
+  }, [condoData, transactions, units, invoices, suppliers, incidents]);
 
-  const isLoading = isCondoLoading || areUnitsLoading || areTransactionsLoading || areInvoicesLoading || areSuppliersLoading || areIncidentsLoading;
+  const isLoading = isCondoLoading;
 
   const getCollectionRef = (name: string) => collection(firestore, 'condominiums', condoId, name);
 
@@ -347,3 +340,5 @@ export function useCondo() {
   }
   return context;
 }
+
+    
