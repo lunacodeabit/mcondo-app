@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useCondo } from "@/contexts/condo-context";
 import type { Unit, AccountMovement, ManagementComment } from "@/lib/definitions";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,4 +167,3 @@ export function AccountStatementDetail({ unit }: AccountStatementDetailProps) {
         </div>
     );
 }
-
