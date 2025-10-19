@@ -25,7 +25,6 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useCondo } from "@/contexts/condo-context";
-import { Button } from "@/components/ui/button";
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -50,16 +49,16 @@ export function AdminSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-between p-2">
             <Logo textColor="text-primary-foreground" />
-            <div className="group-data-[state=collapsed]:hidden">
-                <SidebarTrigger />
-            </div>
-            <div className="group-data-[collapsible=icon]:block hidden">
+            <div className="hidden group-data-[state=expanded]:block">
                 <SidebarTrigger />
             </div>
         </div>
         <div className="p-2 group-data-[state=expanded]:block hidden">
             <h3 className="font-headline text-lg text-primary-foreground">{condo?.name}</h3>
             <p className="text-xs text-sidebar-foreground">{condo?.address}</p>
+        </div>
+         <div className="p-2 hidden group-data-[state=collapsed]:block">
+            <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
