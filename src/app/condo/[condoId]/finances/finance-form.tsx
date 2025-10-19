@@ -30,6 +30,9 @@ export function FinanceForm({ addTransaction, closeModal }: FinanceFormProps) {
     defaultValues: {
       date: new Date().toISOString().split("T")[0],
       type: "egreso",
+      description: "",
+      amount: undefined,
+      category: "",
     },
   });
 
@@ -85,7 +88,7 @@ export function FinanceForm({ addTransaction, closeModal }: FinanceFormProps) {
             <FormItem>
               <FormLabel>Monto</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="5000.00" {...field} />
+                <Input type="number" step="0.01" placeholder="5000.00" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
