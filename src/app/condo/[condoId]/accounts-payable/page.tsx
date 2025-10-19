@@ -1,20 +1,30 @@
 
 "use client";
 
-import { PageHeader } from "../_components/page-header";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
 import { useCondo } from "@/contexts/condo-context";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import type { Invoice } from "@/lib/definitions";
+
+import { PageHeader } from "../_components/page-header";
 import { StatusBadge } from "../_components/status-badge";
-import { MoreHorizontal } from "lucide-react";
+import { BillForm } from "./_components/bill-form";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { PlusCircle, MoreHorizontal } from "lucide-react";
 
 export default function AccountsPayablePage() {
-  const { condo, payInvoice } = useCondo();
+  const { condo, payInvoice, saveInvoice, deleteInvoice } = useCondo();
+  const [isFormModalOpen, setFormModalOpen] = useState(false);
+  const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | undefined>(undefined);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | undefined>(undefined);
+
 
   const invoices = useMemo(() => {
     if (!condo) return [];
@@ -26,6 +36,34 @@ export default function AccountsPayablePage() {
     payInvoice(invoiceId, paymentDate);
   };
   
+  const handleOpenForm = (invoice?: Invoice) => {
+    setInvoiceToEdit(invoice);
+    setFormModalOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setInvoiceToEdit(undefined);
+    setFormModalOpen(false);
+  }
+
+  const handleSave = (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => {
+    saveInvoice(invoice);
+    handleCloseForm();
+  };
+
+  const handleOpenDeleteAlert = (invoiceId: string) => {
+    setInvoiceToDelete(invoiceId);
+    setDeleteAlertOpen(true);
+  }
+
+  const handleConfirmDelete = () => {
+    if (invoiceToDelete) {
+      deleteInvoice(invoiceToDelete);
+    }
+    setDeleteAlertOpen(false);
+    setInvoiceToDelete(undefined);
+  }
+
   if (!condo) {
     return <div>Cargando...</div>;
   }
@@ -33,7 +71,7 @@ export default function AccountsPayablePage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Cuentas por Pagar" description="Gestione las facturas de suplidores y servicios.">
-        <Button>
+        <Button onClick={() => handleOpenForm()}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Registrar Factura
         </Button>
@@ -79,9 +117,14 @@ export default function AccountsPayablePage() {
                               Marcar como Pagada
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem>Editar Factura</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenForm(invoice)}>
+                            Editar Factura
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                          <DropdownMenuItem 
+                            className="text-red-500 focus:text-red-500 focus:bg-red-50"
+                            onClick={() => handleOpenDeleteAlert(invoice.id)}
+                            >
                             Eliminar
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -94,6 +137,40 @@ export default function AccountsPayablePage() {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{invoiceToEdit ? 'Editar' : 'Registrar'} Factura</DialogTitle>
+            <DialogDescription>
+              Complete los detalles de la factura por pagar.
+            </DialogDescription>
+          </DialogHeader>
+          <BillForm 
+            suppliers={condo.suppliers}
+            onSubmit={handleSave} 
+            onCancel={handleCloseForm}
+            invoice={invoiceToEdit}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro que desea eliminar esta factura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la factura.
+              No se eliminará ninguna transacción de egreso asociada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

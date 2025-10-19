@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo } from 'react';
@@ -8,6 +9,8 @@ interface CondoContextType {
   setCondo: React.Dispatch<React.SetStateAction<Condo | null>>;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   payInvoice: (invoiceId: string, paymentDate: string) => void;
+  saveInvoice: (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => void;
+  deleteInvoice: (invoiceId: string) => void;
 }
 
 const CondoContext = createContext<CondoContextType | undefined>(undefined);
@@ -70,11 +73,52 @@ export function CondoProvider({
     });
   };
 
+  const saveInvoice = (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      
+      let updatedInvoices: Invoice[];
+
+      if ('id' in invoice) {
+        // Editing existing invoice
+        updatedInvoices = prevCondo.accountsPayable.map(i => i.id === invoice.id ? { ...i, ...invoice } : i);
+      } else {
+        // Adding new invoice
+        const newInvoice: Invoice = {
+          ...invoice,
+          id: `inv-${new Date().getTime()}`,
+          status: 'Pendiente',
+        };
+        updatedInvoices = [newInvoice, ...prevCondo.accountsPayable];
+      }
+      
+      return {
+        ...prevCondo,
+        accountsPayable: updatedInvoices,
+      };
+    });
+  };
+
+  const deleteInvoice = (invoiceId: string) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+
+      // Note: This does not delete any associated financial transaction.
+      // That would require more complex logic, which can be added later.
+      return {
+        ...prevCondo,
+        accountsPayable: prevCondo.accountsPayable.filter(inv => inv.id !== invoiceId),
+      };
+    });
+  };
+
   const contextValue = useMemo(() => ({
     condo,
     setCondo,
     addTransaction,
     payInvoice,
+    saveInvoice,
+    deleteInvoice,
   }), [condo]);
 
   return (
