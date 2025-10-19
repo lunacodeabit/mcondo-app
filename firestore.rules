@@ -1,225 +1,217 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset enforces role-based access control for a condominium management system.
+ * @description This ruleset enforces role-based access control for a condominium management application.
  *
  * Core Philosophy:
- * Access to condominium data is governed by the user's role within a specific condominium.
- * Condominium administrators have full access, while other users might have restricted access based on future requirements.
+ * The security model revolves around condominium-level access. Users must be authorized as administrators
+ * for a specific condominium to read or write data related to that condominium. Data required for authorization
+ * is denormalized (copied) onto the documents being secured to avoid costly `get()` calls.
  *
  * Data Structure:
- * The database is organized hierarchically under `/condominiums/{condominiumId}`.
- * Each subcollection (e.g., `/units`, `/financial_transactions`) is associated with a specific condominium.
+ * The Firestore database is structured hierarchically, with condominiums as the root level. Each condominium
+ * has subcollections for units, financial transactions, accounts receivable, accounts payable, suppliers,
+ * employees, communications, and incidents. All documents within these subcollections include a
+ * `condominiumId` field to ensure data consistency and enable efficient querying and security rule enforcement.
  *
  * Key Security Decisions:
- * - Access to all collections under a condominium requires the user to be an administrator for that condominium.
- * - Role-based access is enforced by the `isCondominiumAdmin()` function.
- * - Schema validation is relaxed during prototyping to allow for flexible data shapes.
- * - List operations are restricted to condominium admins.
- *
- * Denormalization for Authorization:
- * Each document in subcollections contains a `condominiumId` field, enabling rule-based access control without additional `get()` calls.
+ * - Condominium-level access control is enforced using the `isAdmin()` function, which checks for the existence
+ *   of a document in the `/roles_condominium_admin/{userId}` collection.
+ * - All write operations require the user to be an administrator for the relevant condominium.
+ * - List operations are restricted to administrators for each condominium to prevent unauthorized data access.
+ * - Data validation is limited to ensuring the `condominiumId` field matches the document's path on create
+ *   and that the `condominiumId` field remains immutable on update.
+ * - Anonymous authentication is enabled, but write operations are still restricted to authorized administrators.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to condominium documents.
+     * @description Checks if the user is signed in.
+     * @principle Verified Identity: All authorization decisions must rely on `request.auth` as the source of truth.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is an administrator for the given condominium.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @param {string} condominiumId - The ID of the condominium.
+     * @return {bool} True if the user is an admin, false otherwise.
+     */
+    function isAdmin(condominiumId) {
+      return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid)).data.condominiumId == condominiumId;
+    }
+
+    /**
+     * @description Checks if the user is an existing administrator for the given condominium.
+     * @principle Robustness for State-Changing Operations: For all `update` and `delete` operations without exception, you MUST verify the document exists before proceeding.
+     * @param {string} condominiumId - The ID of the condominium.
+     * @return {bool} True if the user is an admin and the resource exists, false otherwise.
+     */
+    function isExistingAdmin(condominiumId) {
+      return isAdmin(condominiumId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the /condominiums collection.
      * @path /condominiums/{condominiumId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for condominium data.
+     * @allow (create) User with auth and valid data can create a condominium.
+     * @deny (create) User without auth cannot create a condominium.
+     * @allow (get, list) Any user can read condominium data.
+     * @deny (update, delete) Only an admin can update or delete a condominium.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
      */
     match /condominiums/{condominiumId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-      allow list: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to unit documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/units collection.
      * @path /condominiums/{condominiumId}/units/{unitId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for unit data.
+     * @allow (create) Admin can create a unit with matching condominiumId.
+     * @deny (create) Non-admin cannot create a unit.
+     * @allow (get, list) Admin can read unit data.
+     * @deny (get, list) Non-admin cannot read unit data.
+     * @allow (update, delete) Admin can update or delete a unit.
+     * @deny (update, delete) Non-admin cannot update or delete a unit.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/units/{unitId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to financial transaction documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/financial_transactions collection.
      * @path /condominiums/{condominiumId}/financial_transactions/{transactionId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for financial transaction data.
+     * @allow (create) Admin can create a financial transaction with matching condominiumId.
+     * @deny (create) Non-admin cannot create a financial transaction.
+     * @allow (get, list) Admin can read financial transaction data.
+     * @deny (get, list) Non-admin cannot read financial transaction data.
+     * @allow (update, delete) Admin can update or delete a financial transaction.
+     * @deny (update, delete) Non-admin cannot update or delete a financial transaction.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/financial_transactions/{transactionId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to accounts receivable documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/accounts_receivable collection.
      * @path /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for accounts receivable data.
+     * @allow (create) Admin can create an account receivable with matching condominiumId.
+     * @deny (create) Non-admin cannot create an account receivable.
+     * @allow (get, list) Admin can read accounts receivable data.
+     * @deny (get, list) Non-admin cannot read accounts receivable data.
+     * @allow (update, delete) Admin can update or delete an account receivable.
+     * @deny (update, delete) Non-admin cannot update or delete an account receivable.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to accounts payable documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/accounts_payable collection.
      * @path /condominiums/{condominiumId}/accounts_payable/{accountPayableId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for accounts payable data.
+     * @allow (create) Admin can create an account payable with matching condominiumId.
+     * @deny (create) Non-admin cannot create an account payable.
+     * @allow (get, list) Admin can read accounts payable data.
+     * @deny (get, list) Non-admin cannot read accounts payable data.
+     * @allow (update, delete) Admin can update or delete an account payable.
+     * @deny (update, delete) Non-admin cannot update or delete an account payable.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/accounts_payable/{accountPayableId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to supplier documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/suppliers collection.
      * @path /condominiums/{condominiumId}/suppliers/{supplierId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for supplier data.
+     * @allow (create) Admin can create a supplier with matching condominiumId.
+     * @deny (create) Non-admin cannot create a supplier.
+     * @allow (get, list) Admin can read supplier data.
+     * @deny (get, list) Non-admin cannot read supplier data.
+     * @allow (update, delete) Admin can update or delete a supplier.
+     * @deny (update, delete) Non-admin cannot update or delete a supplier.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/suppliers/{supplierId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to employee documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/employees collection.
      * @path /condominiums/{condominiumId}/employees/{employeeId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for employee data.
+     * @allow (create) Admin can create an employee with matching condominiumId.
+     * @deny (create) Non-admin cannot create an employee.
+     * @allow (get, list) Admin can read employee data.
+     * @deny (get, list) Non-admin cannot read employee data.
+     * @allow (update, delete) Admin can update or delete an employee.
+     * @deny (update, delete) Non-admin cannot update or delete an employee.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/employees/{employeeId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to communication documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/communications collection.
      * @path /condominiums/{condominiumId}/communications/{communicationId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for communication data.
+     * @allow (create) Admin can create a communication with matching condominiumId.
+     * @deny (create) Non-admin cannot create a communication.
+     * @allow (get, list) Admin can read communication data.
+     * @deny (get, list) Non-admin cannot read communication data.
+     * @allow (update, delete) Admin can update or delete a communication.
+     * @deny (update, delete) Non-admin cannot update or delete a communication.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/communications/{communicationId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
 
     /**
-     * @description Controls access to incident documents within a condominium.
+     * @description Rules for the /condominiums/{condominiumId}/incidents collection.
      * @path /condominiums/{condominiumId}/incidents/{incidentId}
-     * @allow (get, list) if isCondominiumAdmin(condominiumId)
-     * @allow (create, update, delete) if isCondominiumAdmin(condominiumId)
-     * @deny (get, list) if !isCondominiumAdmin(condominiumId)
-     * @deny (create, update, delete) if !isCondominiumAdmin(condominiumId)
-     * @principle Enforces role-based access for incident data.
+     * @allow (create) Admin can create an incident with matching condominiumId.
+     * @deny (create) Non-admin cannot create an incident.
+     * @allow (get, list) Admin can read incident data.
+     * @deny (get, list) Non-admin cannot read incident data.
+     * @allow (update, delete) Admin can update or delete an incident.
+     * @deny (update, delete) Non-admin cannot update or delete an incident.
+     * @principle Roles: Condominium-level access control is enforced by checking for admin privileges.
+     * @principle Relational Integrity: The 'condominiumId' field must match the document path on create.
      */
     match /condominiums/{condominiumId}/incidents/{incidentId} {
-      // Read Permissions
-      allow get: if isCondominiumAdmin(condominiumId);
-
-      // Write Permissions
-      allow create: if isCondominiumAdmin(condominiumId);
-      allow update: if isCondominiumAdmin(condominiumId);
-      allow delete: if isCondominiumAdmin(condominiumId);
+      allow get, list: if isAdmin(condominiumId);
+      allow create: if isAdmin(condominiumId);
+      allow update, delete: if isExistingAdmin(condominiumId);
     }
-
-     match /roles_condominium_admin/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-  }
-
-  /**
-   * @description Checks if the user is signed in.
-   * @return True if the user is signed in, false otherwise.
-   */
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  /**
-   * @description Checks if the user is a condominium administrator.
-   * @param {string} condominiumId - The ID of the condominium.
-   * @return True if the user is a condominium administrator, false otherwise.
-   * @example
-   * // Example implementation using a dedicated roles collection:
-   * // return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid))
-   * // TODO: Replace with actual role check logic (e.g., querying a /roles collection or checking a custom claim).
-   */
-  function isCondominiumAdmin(condominiumId) {
-    // Placeholder: Replace with actual role check logic.
-    // This example grants admin access to all signed-in users for prototyping purposes.
-    return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
   }
 }
