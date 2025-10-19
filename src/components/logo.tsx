@@ -7,7 +7,9 @@ export function Logo({ className, textColor = 'text-primary' }: { className?: st
       <div className="bg-primary p-1.5 rounded-md">
         <Building2 className="h-6 w-6 text-primary-foreground" />
       </div>
-      <span>MICONDO APP</span>
+      <span className="group-data-[state=expanded]:block hidden md:block group-data-[state=collapsed]:hidden">{/* This part will hide on collapsed */}
+        MICONDO APP
+      </span>
     </div>
   );
 }
