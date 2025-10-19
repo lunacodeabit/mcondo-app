@@ -18,14 +18,38 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export default function IncidentsPage() {
-  const { condo, saveIncident, deleteIncident } = useCondo();
+  const { condoId } = useCondo();
+  const firestore = useFirestore();
+
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [incidentToEdit, setIncidentToEdit] = useState<Incident | undefined>(undefined);
   const [incidentToDelete, setIncidentToDelete] = useState<string | undefined>(undefined);
+
+  const incidentsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'incidents'), [firestore, condoId]);
+  const { data: incidents, isLoading } = useCollection<Incident>(incidentsCollection);
+
+  const saveIncident = (incident: Omit<Incident, 'id'> | Incident) => {
+    const colRef = collection(firestore, 'condominiums', condoId, 'incidents');
+     if ('id' in incident) {
+        const incidentRef = doc(colRef, incident.id);
+        updateDocumentNonBlocking(incidentRef, incident);
+    } else {
+        addDocumentNonBlocking(colRef, incident);
+    }
+    handleCloseForm();
+  };
+
+  const deleteIncident = (incidentId: string) => {
+    const incidentRef = doc(firestore, 'condominiums', condoId, 'incidents', incidentId);
+    deleteDocumentNonBlocking(incidentRef);
+  };
   
   const handleOpenForm = (incident?: Incident) => {
     setIncidentToEdit(incident);
@@ -36,11 +60,6 @@ export default function IncidentsPage() {
     setIncidentToEdit(undefined);
     setFormModalOpen(false);
   }
-
-  const handleSave = (incident: Omit<Incident, 'id'> | Incident) => {
-    saveIncident(incident);
-    handleCloseForm();
-  };
 
   const handleOpenDeleteAlert = (incidentId: string) => {
     setIncidentToDelete(incidentId);
@@ -55,7 +74,7 @@ export default function IncidentsPage() {
     setIncidentToDelete(undefined);
   }
 
-  if (!condo) {
+  if (isLoading) {
     return <div>Cargando...</div>;
   }
 
@@ -82,7 +101,7 @@ export default function IncidentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {condo.incidents.map((incident) => (
+                {(incidents || []).map((incident) => (
                   <TableRow key={incident.id}>
                     <TableCell className="font-medium">{incident.title}</TableCell>
                     <TableCell>{incident.reportedBy}</TableCell>
@@ -133,7 +152,7 @@ export default function IncidentsPage() {
             </DialogDescription>
           </DialogHeader>
           <IncidentForm 
-            onSubmit={handleSave} 
+            onSubmit={saveIncident} 
             onCancel={handleCloseForm}
             incident={incidentToEdit}
           />
@@ -158,4 +177,3 @@ export default function IncidentsPage() {
     </div>
   );
 }
-

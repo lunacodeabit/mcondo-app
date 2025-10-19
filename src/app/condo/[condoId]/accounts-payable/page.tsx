@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { useCondo } from "@/contexts/condo-context";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Invoice } from "@/lib/definitions";
+import type { Invoice, Supplier, Transaction } from "@/lib/definitions";
 
 import { PageHeader } from "../_components/page-header";
 import { StatusBadge } from "../_components/status-badge";
@@ -17,23 +17,68 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
+
 
 export default function AccountsPayablePage() {
-  const { condo, payInvoice, saveInvoice, deleteInvoice } = useCondo();
+  const { condo, condoId } = useCondo();
+  const firestore = useFirestore();
+
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | undefined>(undefined);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | undefined>(undefined);
 
+  const invoicesCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'accounts_payable'), [firestore, condoId]);
+  const { data: invoices, isLoading: areInvoicesLoading } = useCollection<Invoice>(invoicesCollection);
 
-  const invoices = useMemo(() => {
-    if (!condo) return [];
-    return condo.accountsPayable.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [condo]);
+  const suppliersCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'suppliers'), [firestore, condoId]);
+  const { data: suppliers, isLoading: areSuppliersLoading } = useCollection<Supplier>(suppliersCollection);
 
-  const handlePayInvoice = (invoiceId: string) => {
-    const paymentDate = new Date().toISOString();
-    payInvoice(invoiceId, paymentDate);
+  const sortedInvoices = useMemo(() => {
+    if (!invoices) return [];
+    return [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [invoices]);
+
+  const payInvoice = (invoiceId: string) => {
+      if (!invoices || !suppliers) return;
+      const invoiceToPay = invoices.find(inv => inv.id === invoiceId);
+      if (!invoiceToPay) return;
+
+      const newTransaction: Omit<Transaction, 'id'> = {
+        date: new Date().toISOString(),
+        description: `Pago factura #${invoiceToPay.invoiceNumber} a ${suppliers.find(s => s.id === invoiceToPay.supplierId)?.name || 'N/A'}`,
+        type: 'egreso',
+        category: 'Cuentas por Pagar',
+        amount: invoiceToPay.amount,
+        reference: invoiceId,
+      };
+
+      const transColRef = collection(firestore, 'condominiums', condoId, 'financial_transactions');
+      addDocumentNonBlocking(transColRef, newTransaction).then(docRef => {
+        const invoiceRef = doc(firestore, 'condominiums', condoId, 'accounts_payable', invoiceId);
+        updateDocumentNonBlocking(invoiceRef, { status: 'Pagada', relatedTransactionId: docRef?.id });
+      });
+  };
+
+  const saveInvoice = (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => {
+    const colRef = collection(firestore, 'condominiums', condoId, 'accounts_payable');
+    if ('id' in invoice) {
+        const docRef = doc(colRef, invoice.id);
+        updateDocumentNonBlocking(docRef, invoice);
+    } else {
+        const newId = `inv-${new Date().getTime()}`;
+        const docRef = doc(colRef, newId);
+        setDocumentNonBlocking(docRef, { ...invoice, id: newId, status: 'Pendiente' }, { merge: true });
+    }
+    handleCloseForm();
+  };
+
+  const deleteInvoice = (invoiceId: string) => {
+    const docRef = doc(firestore, 'condominiums', condoId, 'accounts_payable', invoiceId);
+    deleteDocumentNonBlocking(docRef);
   };
   
   const handleOpenForm = (invoice?: Invoice) => {
@@ -45,11 +90,6 @@ export default function AccountsPayablePage() {
     setInvoiceToEdit(undefined);
     setFormModalOpen(false);
   }
-
-  const handleSave = (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => {
-    saveInvoice(invoice);
-    handleCloseForm();
-  };
 
   const handleOpenDeleteAlert = (invoiceId: string) => {
     setInvoiceToDelete(invoiceId);
@@ -64,7 +104,7 @@ export default function AccountsPayablePage() {
     setInvoiceToDelete(undefined);
   }
 
-  if (!condo) {
+  if (areInvoicesLoading || areSuppliersLoading) {
     return <div>Cargando...</div>;
   }
 
@@ -92,13 +132,13 @@ export default function AccountsPayablePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
+                {sortedInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{condo.suppliers.find(s => s.id === invoice.supplierId)?.name || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">{(suppliers || []).find(s => s.id === invoice.supplierId)?.name || 'N/A'}</TableCell>
                     <TableCell>{invoice.invoiceNumber}</TableCell>
                     <TableCell>{formatDate(invoice.date, { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                     <TableCell>{formatDate(invoice.dueDate, { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(invoice.amount, condo.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(invoice.amount, condo?.currency || 'USD')}</TableCell>
                     <TableCell>
                       <StatusBadge status={invoice.status} />
                     </TableCell>
@@ -113,7 +153,7 @@ export default function AccountsPayablePage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           {invoice.status !== 'Pagada' && (
-                            <DropdownMenuItem onClick={() => handlePayInvoice(invoice.id)}>
+                            <DropdownMenuItem onClick={() => payInvoice(invoice.id)}>
                               Marcar como Pagada
                             </DropdownMenuItem>
                           )}
@@ -147,8 +187,8 @@ export default function AccountsPayablePage() {
             </DialogDescription>
           </DialogHeader>
           <BillForm 
-            suppliers={condo.suppliers}
-            onSubmit={handleSave} 
+            suppliers={suppliers || []}
+            onSubmit={saveInvoice} 
             onCancel={handleCloseForm}
             invoice={invoiceToEdit}
           />

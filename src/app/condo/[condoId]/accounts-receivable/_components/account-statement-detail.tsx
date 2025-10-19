@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useCondo } from "@/contexts/condo-context";
+import { useMemo, useState } from "react";
 import type { Unit, AccountMovement, ManagementComment } from "@/lib/definitions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -17,7 +16,8 @@ import { PlusCircle, MinusCircle, CalendarPlus, MessageSquarePlus } from "lucide
 import { AccountMovementForm } from "./account-movement-form";
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 interface AccountStatementDetailProps {
@@ -26,7 +26,6 @@ interface AccountStatementDetailProps {
 }
 
 export function AccountStatementDetail({ unit, condoId }: AccountStatementDetailProps) {
-    const { condo, saveAccountMovement, addMonthlyFee, saveManagementComment } = useCondo();
     const firestore = useFirestore();
     const [comment, setComment] = useState("");
     const [isMovementFormOpen, setMovementFormOpen] = useState(false);
@@ -37,6 +36,55 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
 
     const managementHistoryQuery = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units', unit.id, 'management_history'), [firestore, condoId, unit.id]);
     const { data: managementHistory, isLoading: isManagementHistoryLoading } = useCollection<ManagementComment>(managementHistoryQuery);
+
+    const saveManagementComment = (unitId: string, comment: Omit<ManagementComment, 'id'>) => {
+      const commentColRef = collection(firestore, 'condominiums', condoId, 'units', unitId, 'management_history');
+      addDocumentNonBlocking(commentColRef, comment);
+    };
+
+    const saveAccountMovement = (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => {
+        const { unitId, ...movementData } = movement;
+        const colRef = collection(firestore, 'condominiums', condoId, 'units', unitId, 'account_history');
+        
+        const dataToSave = {
+            ...movementData,
+            date: movementData.date instanceof Date ? movementData.date.toISOString() : movementData.date,
+        };
+        addDocumentNonBlocking(colRef, dataToSave);
+    };
+
+     const addMonthlyFee = (unitId: string) => {
+        if (!unit) return;
+
+        const now = new Date();
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const monthName = nextMonthDate.toLocaleString('es-ES', { month: 'long' });
+        const year = nextMonthDate.getFullYear();
+
+        const description = `Cuota de Mantenimiento ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+        const date = nextMonthDate.toISOString();
+        
+        const feeExists = (accountHistory || []).some(item => item.description === description);
+
+        if (feeExists) {
+            alert(`La cuota para ${description} ya ha sido registrada.`);
+            return;
+        }
+        
+        if (unit.fees.monthlyFee <= 0) {
+            alert('La cuota mensual para esta unidad no está configurada.');
+            return;
+        }
+
+        const movement: Omit<AccountMovement, 'id'> = {
+            date: date,
+            type: 'cuota_mensual',
+            description: description,
+            amount: unit.fees.monthlyFee,
+        };
+        
+        saveAccountMovement({ ...movement, unitId });
+    };
 
 
     const balance = useMemo(() => {
@@ -70,7 +118,7 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
         setMovementFormOpen(false);
     }
     
-    if (!condo || !unit) return null;
+    if (!unit) return null;
 
     return (
         <div className="space-y-6">
@@ -90,8 +138,8 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Saldo Actual</CardDescription>
-                        <CardTitle className={`text-lg ${balance > 0 ? 'text-destructive' : 'text-green-600'}`}>
-                            {formatCurrency(balance, condo.currency)}
+                        <CardTitle className={`text-lg ${balance >= 0 ? 'text-destructive' : 'text-green-600'}`}>
+                            {formatCurrency(balance)}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -122,8 +170,8 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
                                         <TableRow key={item.id}>
                                             <TableCell className="text-xs">{formatDate(item.date, {day: '2-digit', month: 'short', year: 'numeric'})}</TableCell>
                                             <TableCell>{item.description}</TableCell>
-                                            <TableCell className={cn("text-right font-mono", item.amount > 0 ? 'text-red-600' : 'text-green-600')}>
-                                                {formatCurrency(item.amount, condo.currency)}
+                                            <TableCell className={cn("text-right font-mono", item.amount >= 0 ? 'text-red-600' : 'text-green-600')}>
+                                                {formatCurrency(item.amount)}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -168,7 +216,7 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
                         <DialogDescription>Apto. {unit.unitNumber} - {unit.owner.name}</DialogDescription>
                     </DialogHeader>
                     <AccountMovementForm 
-                        units={condo.units}
+                        units={[]}
                         onSubmit={handleSaveMovement}
                         onCancel={() => setMovementFormOpen(false)}
                         preselectedUnitId={unit.id}
@@ -179,6 +227,3 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
         </div>
     );
 }
-
-
-    

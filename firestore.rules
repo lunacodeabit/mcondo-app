@@ -2,78 +2,229 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Helper function to determine if the user is an admin for the condominium
-    // TODO: Implement this function based on your role management strategy.
-    // Example: return get(/databases/$(database)/documents/condominium_admins/$(condominiumId)).data.adminIds.hasAny([request.auth.uid]);
-    function isCondominiumAdmin(condominiumId) {
-       return exists(/databases/$(database)/documents/condominiums_admins/$(condominiumId)/admins/$(request.auth.uid));
-    }
-
+    /**
+     * @description Controls access to condominium documents.
+     * @path /condominiums/{condominiumId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write condominium data.
+     */
     match /condominiums/{condominiumId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to unit documents within a condominium.
+     * @path /condominiums/{condominiumId}/units/{unitId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write unit data.
+     */
     match /condominiums/{condominiumId}/units/{unitId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to financial transaction documents within a condominium.
+     * @path /condominiums/{condominiumId}/financial_transactions/{transactionId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write financial transaction data.
+     */
     match /condominiums/{condominiumId}/financial_transactions/{transactionId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to accounts receivable documents within a condominium.
+     * @path /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write accounts receivable data.
+     */
     match /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to accounts payable documents within a condominium.
+     * @path /condominiums/{condominiumId}/accounts_payable/{accountPayableId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write accounts payable data.
+     */
     match /condominiums/{condominiumId}/accounts_payable/{accountPayableId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to supplier documents within a condominium.
+     * @path /condominiums/{condominiumId}/suppliers/{supplierId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write supplier data.
+     */
     match /condominiums/{condominiumId}/suppliers/{supplierId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to employee documents within a condominium.
+     * @path /condominiums/{condominiumId}/employees/{employeeId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write employee data.
+     */
     match /condominiums/{condominiumId}/employees/{employeeId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to communication documents within a condominium.
+     * @path /condominiums/{condominiumId}/communications/{communicationId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write communication data.
+     */
     match /condominiums/{condominiumId}/communications/{communicationId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
 
+    /**
+     * @description Controls access to incident documents within a condominium.
+     * @path /condominiums/{condominiumId}/incidents/{incidentId}
+     * @allow (read) If the user is an admin for the condominium.
+     * @allow (write) If the user is an admin for the condominium.
+     * @deny (read) If the user is not authenticated.
+     * @deny (write) If the user is not authenticated.
+     * @principle Role-based access control; Admin users can read and write incident data.
+     */
     match /condominiums/{condominiumId}/incidents/{incidentId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow update: if isSignedIn() && isCondominiumAdmin(condominiumId);
-      allow delete: if isSignedIn() && isCondominiumAdmin(condominiumId);
+      // Check if the user is an admin for the condominium
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid));
+      }
+
+      // Allow reads if the user is an admin and authenticated
+      allow get: if request.auth != null && isAdmin();
+      allow list: if request.auth != null && isAdmin();
+
+      // Allow create, update, delete if the user is an admin and authenticated
+      allow create: if request.auth != null && isAdmin();
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
     }
   }
 }

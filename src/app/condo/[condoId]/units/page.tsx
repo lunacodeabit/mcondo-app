@@ -14,15 +14,40 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Unit } from "@/lib/definitions";
 import { UnitForm } from "./_components/unit-form";
 import { useRouter } from 'next/navigation';
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
 
 export default function UnitsPage() {
-  const { condo, saveUnit, deleteUnit } = useCondo();
+  const { condoId } = useCondo();
+  const firestore = useFirestore();
+  const router = useRouter();
+
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [unitToEdit, setUnitToEdit] = useState<Unit | undefined>(undefined);
   const [unitToDelete, setUnitToDelete] = useState<string | undefined>(undefined);
-  const router = useRouter();
+  
+  const unitsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units'), [firestore, condoId]);
+  const { data: units, isLoading } = useCollection<Unit>(unitsCollection);
 
+  const saveUnit = (unit: Omit<Unit, 'id' | 'accountHistory' | 'managementHistory'> | Unit) => {
+    const colRef = collection(firestore, 'condominiums', condoId, 'units');
+    const { accountHistory, managementHistory, ...unitData } = unit as Unit;
+    
+    if ('id' in unitData) {
+        const unitRef = doc(colRef, unitData.id);
+        updateDocumentNonBlocking(unitRef, unitData);
+    } else {
+        addDocumentNonBlocking(colRef, unitData);
+    }
+    handleCloseForm();
+  };
+
+  const deleteUnit = (unitId: string) => {
+    const unitRef = doc(firestore, 'condominiums', condoId, 'units', unitId);
+    deleteDocumentNonBlocking(unitRef);
+  };
 
   const handleOpenForm = (unit?: Unit) => {
     setUnitToEdit(unit);
@@ -33,11 +58,6 @@ export default function UnitsPage() {
     setUnitToEdit(undefined);
     setFormModalOpen(false);
   }
-
-  const handleSave = (unit: Omit<Unit, 'id' | 'accountHistory' | 'managementHistory'> | Unit) => {
-    saveUnit(unit);
-    handleCloseForm();
-  };
 
   const handleOpenDeleteAlert = (unitId: string) => {
     setUnitToDelete(unitId);
@@ -53,11 +73,11 @@ export default function UnitsPage() {
   }
 
   const handleViewStatement = (unitId: string) => {
-     const accountsReceivableUrl = `/condo/${condo?.id}/accounts-receivable?viewUnit=${unitId}`;
+     const accountsReceivableUrl = `/condo/${condoId}/accounts-receivable?viewUnit=${unitId}`;
      router.push(accountsReceivableUrl);
   }
 
-  if (!condo) {
+  if (isLoading) {
     return <div>Cargando...</div>;
   }
 
@@ -84,7 +104,7 @@ export default function UnitsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {condo.units.map((unit) => (
+                        {(units || []).map((unit) => (
                             <TableRow key={unit.id}>
                                 <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                                 <TableCell>{unit.type}</TableCell>
@@ -137,7 +157,7 @@ export default function UnitsPage() {
           </DialogHeader>
           <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6">
             <UnitForm 
-                onSubmit={handleSave} 
+                onSubmit={saveUnit} 
                 onCancel={handleCloseForm}
                 unit={unitToEdit}
             />

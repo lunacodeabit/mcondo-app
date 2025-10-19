@@ -12,47 +12,65 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AccountStatementDetail } from "./_components/account-statement-detail";
-import type { Unit } from "@/lib/definitions";
-import { useSearchParams, useParams } from 'next/navigation';
+import type { Unit, AccountMovement } from "@/lib/definitions";
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
 function AccountsReceivableContent() {
-  const { condo, isLoading } = useCondo();
+  const { condo, isLoading: isCondoLoading, condoId } = useCondo();
+  const firestore = useFirestore();
+  const router = useRouter();
+
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | undefined>(undefined);
   const searchParams = useSearchParams();
-  const params = useParams();
-  const condoId = params.condoId as string;
   
-  const firestore = useFirestore();
+  const unitsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units'), [firestore, condoId]);
+  const { data: units, isLoading: areUnitsLoading } = useCollection<Unit>(unitsCollection);
+  
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [areBalancesLoading, setAreBalancesLoading] = useState(true);
 
-  // We are already fetching units in the context, but let's imagine
-  // we want to calculate balances here. We'd need to fetch sub-collections,
-  // which can be complex. For now, the context provides a simplified `units` array.
-  // A more robust implementation might fetch balances via a Cloud Function or more detailed queries.
+  useEffect(() => {
+    if (!units) return;
+
+    const fetchBalances = async () => {
+        setAreBalancesLoading(true);
+        const newBalances: Record<string, number> = {};
+        for (const unit of units) {
+            const historyCollection = collection(firestore, 'condominiums', condoId, 'units', unit.id, 'account_history');
+            const historySnapshot = await getDocs(historyCollection);
+            const balance = historySnapshot.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+            newBalances[unit.id] = balance;
+        }
+        setBalances(newBalances);
+        setAreBalancesLoading(false);
+    };
+
+    fetchBalances();
+  }, [units, firestore, condoId]);
+
+
   const unitsWithBalance = useMemo(() => {
-    if (!condo?.units) return [];
-    return condo.units.map(unit => {
-      // This balance calculation is based on data potentially fetched from subcollections
-      // if the context were to fetch them. For now, it's illustrative.
-      // The real-time balance is calculated within AccountStatementDetail.
-      const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
-      return { ...unit, balance };
-    }).sort((a, b) => b.balance - a.balance);
-  }, [condo?.units]);
+    if (!units) return [];
+    return units.map(unit => ({ 
+        ...unit, 
+        balance: balances[unit.id] || 0 
+    })).sort((a, b) => b.balance - a.balance);
+  }, [units, balances]);
 
   useEffect(() => {
     const unitIdToView = searchParams.get('viewUnit');
-    if (unitIdToView && condo?.units) {
-      const unit = condo.units.find(u => u.id === unitIdToView);
+    if (unitIdToView && units) {
+      const unit = units.find(u => u.id === unitIdToView);
       if (unit) {
         handleViewDetail(unit);
       }
     }
-  }, [searchParams, condo?.units]);
+  }, [searchParams, units]);
 
 
   const getBalanceBadge = (balance: number) => {
@@ -68,20 +86,17 @@ function AccountsReceivableContent() {
   const handleViewDetail = (unit: Unit) => {
     setSelectedUnit(unit);
     setDetailOpen(true);
+    // Update URL without reloading
+    router.replace(`/condo/${condoId}/accounts-receivable?viewUnit=${unit.id}`, undefined);
   }
 
   const handleCloseDetail = () => {
     setDetailOpen(false);
     setSelectedUnit(undefined);
+    router.replace(`/condo/${condoId}/accounts-receivable`, undefined);
   }
   
-  const latestSelectedUnit = useMemo(() => {
-    if (!selectedUnit || !condo) return undefined;
-    return condo.units.find(u => u.id === selectedUnit.id);
-  }, [condo, selectedUnit, isDetailOpen]);
-
-
-  if (isLoading && !condo) {
+  if (isCondoLoading || areUnitsLoading || areBalancesLoading) {
     return (
         <div className="flex flex-col h-full">
             <PageHeader title="Cuentas por Cobrar" description="Administre los estados de cuenta de cada unidad." />
@@ -116,6 +131,7 @@ function AccountsReceivableContent() {
         </div>
     )
   }
+  if (!condo) return null;
 
   return (
     <div className="flex flex-col h-full">
@@ -160,13 +176,13 @@ function AccountsReceivableContent() {
       <Dialog open={isDetailOpen} onOpenChange={handleCloseDetail}>
         <DialogContent className="max-w-4xl h-[90vh]">
             <DialogHeader>
-                <DialogTitle>Estado de Cuenta - Apto. {latestSelectedUnit?.unitNumber}</DialogTitle>
+                <DialogTitle>Estado de Cuenta - Apto. {selectedUnit?.unitNumber}</DialogTitle>
                 <DialogDescription>
                     Historial completo de transacciones y gestiones para esta unidad.
                 </DialogDescription>
             </DialogHeader>
             <div className="overflow-y-auto -mx-6 px-6">
-              {latestSelectedUnit && <AccountStatementDetail unit={latestSelectedUnit} condoId={condoId} />}
+              {selectedUnit && <AccountStatementDetail unit={selectedUnit} condoId={condoId} />}
             </div>
         </DialogContent>
       </Dialog>
@@ -181,5 +197,3 @@ export default function AccountsReceivablePage() {
         </Suspense>
     )
 }
-
-    

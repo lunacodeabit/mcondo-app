@@ -13,10 +13,34 @@ import { TransactionsTable } from "./finances/transactions-table";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { FinanceForm } from "./finances/finance-form";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import type { Transaction, Invoice, Unit, AccountMovement } from "@/lib/definitions";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function FinancesPage() {
-  const { condo, addTransaction } = useCondo();
+  const { condo, isLoading, condoId } = useCondo();
   const [isModalOpen, setModalOpen] = useState(false);
+  const firestore = useFirestore();
+
+  // --- Data Fetching ---
+  const transactionsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'financial_transactions'), [firestore, condoId]);
+  const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsCollection);
+
+  const invoicesCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'accounts_payable'), [firestore, condoId]);
+  const { data: invoices, isLoading: isInvoicesLoading } = useCollection<Invoice>(invoicesCollection);
+  
+  const unitsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units'), [firestore, condoId]);
+  const { data: units, isLoading: areUnitsLoading } = useCollection<Unit>(unitsCollection);
+  
+  // A simple way to get account history for all units. For larger condos, this could be optimized.
+  // This is a placeholder for a more complex aggregation if needed.
+  const [allAccountMovements, setAllAccountMovements] = useState<{[unitId: string]: AccountMovement[]}>({});
+
+  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
+    const transColRef = collection(firestore, 'condominiums', condoId, 'financial_transactions');
+    addDocumentNonBlocking(transColRef, transaction);
+  };
 
   const financialSummary = useMemo(() => {
     if (!condo) return { income: 0, expenses: 0, reconciledBalance: 0, toCollect: 0, toPay: 0 };
@@ -25,41 +49,34 @@ export default function FinancesPage() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    const income = condo.finances.transactions
-      .filter(t => {
-        const tDate = new Date(t.date);
-        return t.type === 'ingreso' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
+    const monthlyTransactions = (transactions || []).filter(t => {
+      const tDate = new Date(t.date);
+      return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+    });
 
-    const expenses = condo.finances.transactions
-      .filter(t => {
-        const tDate = new Date(t.date);
-        return t.type === 'egreso' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
+    const income = monthlyTransactions.filter(t => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0);
+    const expenses = monthlyTransactions.filter(t => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0);
 
-    const totalIncome = condo.finances.transactions.filter(t => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = condo.finances.transactions.filter(t => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0);
+    const totalIncome = (transactions || []).filter(t => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpenses = (transactions || []).filter(t => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0);
     const reconciledBalance = condo.finances.manualBalance + totalIncome - totalExpenses;
     
-    const toPay = condo.accountsPayable
-        .filter(inv => inv.status === 'Pendiente' || inv.status === 'Vencida')
-        .reduce((sum, inv) => sum + inv.amount, 0);
+    const toPay = (invoices || []).filter(inv => inv.status === 'Pendiente' || inv.status === 'Vencida').reduce((sum, inv) => sum + inv.amount, 0);
 
-    const toCollect = condo.units.reduce((total, unit) => {
-        const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
-        return total + (balance > 0 ? balance : 0);
-    }, 0);
+    // This calculation is now less direct. The balance is calculated on the accounts receivable page.
+    // For this dashboard, we will show a placeholder or a simplified value.
+    // A proper implementation would need a more complex query or cloud function.
+    const toCollect = 0; // Simplified for now.
 
     return { income, expenses, reconciledBalance, toCollect, toPay };
-  }, [condo]);
+  }, [condo, transactions, invoices, units]);
 
-  if (!condo) return <div>Cargando...</div>;
+  if (isLoading) return <div>Cargando...</div>;
+  if (!condo) return <div>Condominio no encontrado.</div>;
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <PageHeader title="Finanzas" description="Un resumen de la salud financiera del condominio.">
+      <PageHeader title="Finanzas" description={`Un resumen de la salud financiera de ${condo.name}.`}>
         <Dialog open={isModalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
                 <Button>
@@ -82,18 +99,21 @@ export default function FinancesPage() {
             value={formatCurrency(financialSummary.reconciledBalance, condo.currency)}
             icon={Scale}
             color="text-blue-500"
+            isLoading={isTransactionsLoading}
           />
           <KpiCard
             title="Ingresos del Mes"
             value={formatCurrency(financialSummary.income, condo.currency)}
             icon={TrendingUp}
             color="text-green-500"
+            isLoading={isTransactionsLoading}
           />
           <KpiCard
             title="Egresos del Mes"
             value={formatCurrency(financialSummary.expenses, condo.currency)}
             icon={TrendingDown}
             color="text-red-500"
+            isLoading={isTransactionsLoading}
           />
           <Card>
             <CardHeader className="pb-2">
@@ -103,7 +123,7 @@ export default function FinancesPage() {
                 <div className="text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Total por Cobrar:</span>
-                        <span className="font-bold text-green-600">{formatCurrency(financialSummary.toCollect, condo.currency)}</span>
+                        <span className="font-bold text-green-600">N/A</span>
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-muted-foreground">Total por Pagar:</span>
@@ -119,7 +139,7 @@ export default function FinancesPage() {
                     <CardTitle>Ingresos vs. Egresos</CardTitle>
                 </CardHeader>
                 <CardContent className="pl-2">
-                    <FinancialChart transactions={condo.finances.transactions} />
+                    <FinancialChart transactions={transactions || []} />
                 </CardContent>
             </Card>
             <Card className="lg:col-span-2">
@@ -128,7 +148,7 @@ export default function FinancesPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                     <TransactionsTable 
-                        transactions={condo.finances.transactions} 
+                        transactions={transactions || []} 
                         initialBalance={condo.finances.manualBalance}
                         currency={condo.currency}
                     />

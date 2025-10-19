@@ -13,14 +13,38 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Supplier } from "@/lib/definitions";
 import { SupplierForm } from "./_components/supplier-form";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export default function SuppliersPage() {
-  const { condo, saveSupplier, deleteSupplier } = useCondo();
+  const { condoId } = useCondo();
+  const firestore = useFirestore();
+
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [supplierToEdit, setSupplierToEdit] = useState<Supplier | undefined>(undefined);
   const [supplierToDelete, setSupplierToDelete] = useState<string | undefined>(undefined);
+
+  const suppliersCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'suppliers'), [firestore, condoId]);
+  const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersCollection);
+
+  const saveSupplier = (supplier: Omit<Supplier, 'id'> | Supplier) => {
+    const colRef = collection(firestore, 'condominiums', condoId, 'suppliers');
+    if ('id' in supplier) {
+        const supRef = doc(colRef, supplier.id);
+        updateDocumentNonBlocking(supRef, supplier);
+    } else {
+        addDocumentNonBlocking(colRef, supplier);
+    }
+    handleCloseForm();
+  };
+
+  const deleteSupplier = (supplierId: string) => {
+    const supRef = doc(firestore, 'condominiums', condoId, 'suppliers', supplierId);
+    deleteDocumentNonBlocking(supRef);
+  };
 
   const handleOpenForm = (supplier?: Supplier) => {
     setSupplierToEdit(supplier);
@@ -31,11 +55,6 @@ export default function SuppliersPage() {
     setSupplierToEdit(undefined);
     setFormModalOpen(false);
   }
-
-  const handleSave = (supplier: Omit<Supplier, 'id'> | Supplier) => {
-    saveSupplier(supplier);
-    handleCloseForm();
-  };
 
   const handleOpenDeleteAlert = (supplierId: string) => {
     setSupplierToDelete(supplierId);
@@ -51,7 +70,7 @@ export default function SuppliersPage() {
   }
 
 
-  if (!condo) {
+  if (isLoading) {
     return <div>Cargando...</div>;
   }
 
@@ -81,7 +100,7 @@ export default function SuppliersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {condo.suppliers.map((supplier) => (
+                        {(suppliers || []).map((supplier) => (
                             <TableRow key={supplier.id}>
                                 <TableCell className="font-medium">{supplier.name}</TableCell>
                                 <TableCell>{supplier.rnc || 'N/A'}</TableCell>
@@ -132,7 +151,7 @@ export default function SuppliersPage() {
             </DialogDescription>
           </DialogHeader>
           <SupplierForm 
-            onSubmit={handleSave} 
+            onSubmit={saveSupplier} 
             onCancel={handleCloseForm}
             supplier={supplierToEdit}
           />
