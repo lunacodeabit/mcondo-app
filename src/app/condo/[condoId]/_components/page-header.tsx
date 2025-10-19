@@ -11,7 +11,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, children, className }: PageHeaderProps) {
   return (
-    <header className={cn("bg-card border-b p-4 flex items-center justify-between", className)}>
+    <header className={cn("bg-card border-b p-4 flex flex-wrap items-center justify-between gap-4", className)}>
       <div className="flex items-center gap-4">
         <div className="md:hidden">
             <SidebarTrigger />

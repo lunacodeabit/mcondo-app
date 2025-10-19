@@ -75,7 +75,7 @@ export default function FinancesPage() {
         </Dialog>
       </PageHeader>
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Saldo Reconciliado"
             value={formatCurrency(financialSummary.reconciledBalance, condo.currency)}
@@ -112,7 +112,7 @@ export default function FinancesPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <Card className="lg:col-span-3">
                 <CardHeader>
                     <CardTitle>Ingresos vs. Egresos</CardTitle>
