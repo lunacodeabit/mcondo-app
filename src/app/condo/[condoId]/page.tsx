@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCondo } from "@/contexts/condo-context";
@@ -47,7 +48,7 @@ export default function FinancesPage() {
         .reduce((sum, inv) => sum + inv.amount, 0);
 
     const toCollect = condo.units.reduce((total, unit) => {
-        const balance = unit.accountHistory.reduce((acc, mov) => acc + mov.amount, 0);
+        const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
         return total + (balance > 0 ? balance : 0);
     }, 0);
 
