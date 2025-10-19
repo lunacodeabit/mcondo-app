@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo } from 'react';
-import type { Condo, Transaction, Invoice, Supplier } from '@/lib/definitions';
+import type { Condo, Transaction, Invoice, Supplier, AccountMovement, ManagementComment } from '@/lib/definitions';
 
 interface CondoContextType {
   condo: Condo | null;
@@ -13,6 +13,9 @@ interface CondoContextType {
   deleteInvoice: (invoiceId: string) => void;
   saveSupplier: (supplier: Omit<Supplier, 'id'> | Supplier) => void;
   deleteSupplier: (supplierId: string) => void;
+  saveAccountMovement: (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => void;
+  addMonthlyFee: (unitId: string) => void;
+  saveManagementComment: (unitId: string, comment: Omit<ManagementComment, 'id'>) => void;
 }
 
 const CondoContext = createContext<CondoContextType | undefined>(undefined);
@@ -151,6 +154,92 @@ export function CondoProvider({
       };
     });
   };
+  
+  const saveAccountMovement = (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => {
+    setCondo(prevCondo => {
+        if (!prevCondo) return null;
+
+        const { unitId, ...newMovementData } = movement;
+
+        const updatedUnits = prevCondo.units.map(unit => {
+            if (unit.id === unitId) {
+                const maxId = (unit.accountHistory || []).reduce((max, item) => Math.max(Number(item.id.replace('ah','')), max), 0);
+                const newMovement: AccountMovement = {
+                    ...newMovementData,
+                    id: `ah-${maxId + 1}`,
+                    date: newMovementData.date instanceof Date ? newMovementData.date.toISOString() : newMovementData.date,
+                };
+                const updatedHistory = [newMovement, ...(unit.accountHistory || [])]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                return { ...unit, accountHistory: updatedHistory };
+            }
+            return unit;
+        });
+
+        return { ...prevCondo, units: updatedUnits };
+    });
+  };
+  
+  const addMonthlyFee = (unitId: string) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      const unit = prevCondo.units.find(u => u.id === unitId);
+      if (!unit) return prevCondo;
+
+      const now = new Date();
+      // Logic to get the first day of the *next* month
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const monthName = nextMonthDate.toLocaleString('es-ES', { month: 'long' });
+      const year = nextMonthDate.getFullYear();
+
+      const description = `Cuota de Mantenimiento ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+      const date = nextMonthDate.toISOString();
+      
+      const feeExists = (unit.accountHistory || []).some(item => item.description === description);
+
+      if (feeExists) {
+        alert(`La cuota para ${description} ya ha sido registrada.`);
+        return prevCondo;
+      }
+
+      if (unit.fees.monthlyFee <= 0) {
+        alert('La cuota mensual para esta unidad no está configurada.');
+        return prevCondo;
+      }
+      
+      const newMovement: Omit<AccountMovement, 'id'> = {
+          date: date,
+          type: 'cuota_mensual',
+          description: description,
+          amount: unit.fees.monthlyFee,
+      };
+
+      saveAccountMovement({ ...newMovement, unitId });
+      // The state will be updated inside saveAccountMovement, so we just return the current state here
+      // to avoid a double update. The logic inside saveAccountMovement will handle the state change.
+      return prevCondo;
+    });
+  };
+
+  const saveManagementComment = (unitId: string, comment: Omit<ManagementComment, 'id'>) => {
+      setCondo(prevCondo => {
+          if (!prevCondo) return null;
+          const updatedUnits = prevCondo.units.map(unit => {
+              if (unit.id === unitId) {
+                  const maxId = (unit.managementHistory || []).reduce((max, item) => Math.max(Number(item.id.replace('mc','')), max), 0);
+                  const newComment: ManagementComment = {
+                      ...comment,
+                      id: `mc-${maxId + 1}`,
+                  };
+                  const updatedHistory = [newComment, ...(unit.managementHistory || [])];
+                  return { ...unit, managementHistory: updatedHistory };
+              }
+              return unit;
+          });
+          return { ...prevCondo, units: updatedUnits };
+      });
+  };
+
 
   const contextValue = useMemo(() => ({
     condo,
@@ -161,6 +250,9 @@ export function CondoProvider({
     deleteInvoice,
     saveSupplier,
     deleteSupplier,
+    saveAccountMovement,
+    addMonthlyFee,
+    saveManagementComment,
   }), [condo]);
 
   return (

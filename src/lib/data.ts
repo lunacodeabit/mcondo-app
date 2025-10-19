@@ -30,6 +30,9 @@ export const initialCondos: Condo[] = [
         accountHistory: [
             { id: 'ah1', date: '2024-07-01T09:00:00Z', type: 'cuota_mensual', description: 'Cuota de Mantenimiento Julio 2024', amount: 5000 },
             { id: 'ah2', date: '2024-07-01T10:00:00Z', type: 'abono', description: 'Pago de cuota A-101', amount: -5000 },
+        ],
+        managementHistory: [
+            { id: 'mc1', date: '2024-06-20T10:00:00Z', user: 'Admin', comment: 'Se contactó para confirmar recepción de estado de cuenta.' }
         ]
       },
       {
@@ -45,7 +48,8 @@ export const initialCondos: Condo[] = [
         accountHistory: [
             { id: 'ah3', date: '2024-06-01T09:00:00Z', type: 'cuota_mensual', description: 'Cuota de Mantenimiento Junio 2024', amount: 6500 },
             { id: 'ah4', date: '2024-07-01T09:00:00Z', type: 'cuota_mensual', description: 'Cuota de Mantenimiento Julio 2024', amount: 6500 },
-        ]
+        ],
+        managementHistory: []
       },
     ],
     accountsPayable: [

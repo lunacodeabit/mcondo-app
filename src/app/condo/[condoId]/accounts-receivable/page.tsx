@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useCondo } from "@/contexts/condo-context";
 import { PageHeader } from "../_components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,27 +10,52 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AccountStatementDetail } from "./_components/account-statement-detail";
+import type { Unit } from "@/lib/definitions";
 
 export default function AccountsReceivablePage() {
   const { condo } = useCondo();
+  const [isDetailOpen, setDetailOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | undefined>(undefined);
 
   const unitsWithBalance = useMemo(() => {
     if (!condo) return [];
-    return condo.units.map(unit => {
-      const balance = unit.accountHistory.reduce((acc, mov) => acc + mov.amount, 0);
+    // Find the latest unit data from the context whenever the modal is opened/closed
+    // This ensures the list view reflects changes made in the detail view
+    const currentUnits = condo.units;
+    return currentUnits.map(unit => {
+      const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
       return { ...unit, balance };
-    }).sort((a,b) => b.balance - a.balance);
-  }, [condo]);
+    }).sort((a, b) => b.balance - a.balance);
+  }, [condo, isDetailOpen]);
 
   const getBalanceBadge = (balance: number) => {
     if (balance > 0) {
       return <Badge variant="destructive">Debe</Badge>;
     }
     if (balance < 0) {
-      return <Badge className="bg-blue-100 text-blue-800 border-blue-200">A favor</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">A favor</Badge>;
     }
     return <Badge variant="secondary">Al día</Badge>;
   }
+  
+  const handleViewDetail = (unit: Unit) => {
+    setSelectedUnit(unit);
+    setDetailOpen(true);
+  }
+
+  const handleCloseDetail = () => {
+    setDetailOpen(false);
+    setSelectedUnit(undefined);
+  }
+  
+  // Refetch the selected unit from the latest context state before rendering the detail modal
+  const latestSelectedUnit = useMemo(() => {
+    if (!selectedUnit || !condo) return undefined;
+    return condo.units.find(u => u.id === selectedUnit.id);
+  }, [condo, selectedUnit]);
+
 
   if (!condo) {
     return <div>Cargando...</div>;
@@ -54,7 +79,7 @@ export default function AccountsReceivablePage() {
                 </TableHeader>
                 <TableBody>
                     {unitsWithBalance.map(unit => (
-                        <TableRow key={unit.id}>
+                        <TableRow key={unit.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetail(unit)}>
                             <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                             <TableCell>{unit.owner.name}</TableCell>
                             <TableCell>{getBalanceBadge(unit.balance)}</TableCell>
@@ -66,7 +91,7 @@ export default function AccountsReceivablePage() {
                                 {formatCurrency(unit.balance, condo.currency)}
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button variant="outline" size="sm" disabled>Ver Detalle</Button>
+                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetail(unit); }}>Ver Detalle</Button>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -75,6 +100,20 @@ export default function AccountsReceivablePage() {
             </CardContent>
         </Card>
       </main>
+
+      <Dialog open={isDetailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+            <DialogHeader>
+                <DialogTitle>Estado de Cuenta - Apto. {latestSelectedUnit?.unitNumber}</DialogTitle>
+                <DialogDescription>
+                    Historial completo de transacciones y gestiones para esta unidad.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto -mx-6 px-6">
+              {latestSelectedUnit && <AccountStatementDetail unit={latestSelectedUnit} />}
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

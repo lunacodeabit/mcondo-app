@@ -52,6 +52,7 @@ export type Unit = {
     notes: string;
   };
   accountHistory: AccountMovement[];
+  managementHistory: ManagementComment[];
 };
 
 export type Invoice = {
