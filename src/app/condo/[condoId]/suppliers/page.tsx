@@ -9,13 +9,14 @@ import { PlusCircle, Upload, MoreHorizontal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog } from "@/components/ui/dialog";
-import { AlertDialog } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Supplier } from "@/lib/definitions";
+import { SupplierForm } from "./_components/supplier-form";
 
 
 export default function SuppliersPage() {
-  const { condo } = useCondo();
+  const { condo, saveSupplier, deleteSupplier } = useCondo();
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [supplierToEdit, setSupplierToEdit] = useState<Supplier | undefined>(undefined);
@@ -31,9 +32,22 @@ export default function SuppliersPage() {
     setFormModalOpen(false);
   }
 
+  const handleSave = (supplier: Omit<Supplier, 'id'> | Supplier) => {
+    saveSupplier(supplier);
+    handleCloseForm();
+  };
+
   const handleOpenDeleteAlert = (supplierId: string) => {
     setSupplierToDelete(supplierId);
     setDeleteAlertOpen(true);
+  }
+
+  const handleConfirmDelete = () => {
+    if (supplierToDelete) {
+      deleteSupplier(supplierToDelete);
+    }
+    setDeleteAlertOpen(false);
+    setSupplierToDelete(undefined);
   }
 
 
@@ -109,9 +123,37 @@ export default function SuppliersPage() {
         </Card>
       </main>
       
-      {/* Modals will be added in the next step */}
-      <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}></Dialog>
-      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}></AlertDialog>
+      <Dialog open={isFormModalOpen} onOpenChange={setFormModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{supplierToEdit ? 'Editar' : 'Agregar'} Suplidor</DialogTitle>
+            <DialogDescription>
+              Complete los detalles del suplidor.
+            </DialogDescription>
+          </DialogHeader>
+          <SupplierForm 
+            onSubmit={handleSave} 
+            onCancel={handleCloseForm}
+            supplier={supplierToEdit}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro que desea eliminar este suplidor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente al suplidor.
+              No se eliminarán las facturas asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
     </div>
   );

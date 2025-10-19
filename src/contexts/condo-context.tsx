@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo } from 'react';
-import type { Condo, Transaction, Invoice } from '@/lib/definitions';
+import type { Condo, Transaction, Invoice, Supplier } from '@/lib/definitions';
 
 interface CondoContextType {
   condo: Condo | null;
@@ -11,6 +11,8 @@ interface CondoContextType {
   payInvoice: (invoiceId: string, paymentDate: string) => void;
   saveInvoice: (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => void;
   deleteInvoice: (invoiceId: string) => void;
+  saveSupplier: (supplier: Omit<Supplier, 'id'> | Supplier) => void;
+  deleteSupplier: (supplierId: string) => void;
 }
 
 const CondoContext = createContext<CondoContextType | undefined>(undefined);
@@ -112,6 +114,44 @@ export function CondoProvider({
     });
   };
 
+  const saveSupplier = (supplier: Omit<Supplier, 'id'> | Supplier) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+      
+      let updatedSuppliers: Supplier[];
+
+      if ('id' in supplier) {
+        // Editing existing supplier
+        updatedSuppliers = prevCondo.suppliers.map(s => s.id === supplier.id ? { ...s, ...supplier } : s);
+      } else {
+        // Adding new supplier
+        const newSupplier: Supplier = {
+          ...supplier,
+          id: `sup-${new Date().getTime()}`,
+        };
+        updatedSuppliers = [newSupplier, ...prevCondo.suppliers];
+      }
+      
+      return {
+        ...prevCondo,
+        suppliers: updatedSuppliers,
+      };
+    });
+  };
+
+  const deleteSupplier = (supplierId: string) => {
+    setCondo(prevCondo => {
+      if (!prevCondo) return null;
+
+      // Note: This does not delete related invoices. 
+      // You might want to add a check or cascade deletion logic later.
+      return {
+        ...prevCondo,
+        suppliers: prevCondo.suppliers.filter(s => s.id !== supplierId),
+      };
+    });
+  };
+
   const contextValue = useMemo(() => ({
     condo,
     setCondo,
@@ -119,6 +159,8 @@ export function CondoProvider({
     payInvoice,
     saveInvoice,
     deleteInvoice,
+    saveSupplier,
+    deleteSupplier,
   }), [condo]);
 
   return (
