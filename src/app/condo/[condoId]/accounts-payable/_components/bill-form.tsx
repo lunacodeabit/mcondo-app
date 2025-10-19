@@ -4,6 +4,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import React from 'react';
 
 import type { Invoice, Supplier } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
@@ -40,12 +41,15 @@ interface BillFormProps {
 }
 
 export function BillForm({ suppliers, onSubmit, onCancel, invoice }: BillFormProps) {
+    
+  const [defaultDate] = React.useState(new Date());
+
   const defaultValues: BillFormValues = {
     supplierId: invoice?.supplierId || "",
     invoiceNumber: invoice?.invoiceNumber || "",
     amount: invoice?.amount || 0,
-    date: invoice ? new Date(invoice.date) : new Date(),
-    dueDate: invoice ? new Date(invoice.dueDate) : new Date(),
+    date: invoice ? new Date(invoice.date) : defaultDate,
+    dueDate: invoice ? new Date(invoice.dueDate) : defaultDate,
     items: invoice?.items || [{ description: "", quantity: 1, unitPrice: invoice?.amount || 0 }]
   };
 
