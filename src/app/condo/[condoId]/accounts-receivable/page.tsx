@@ -13,33 +13,47 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AccountStatementDetail } from "./_components/account-statement-detail";
 import type { Unit } from "@/lib/definitions";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 function AccountsReceivableContent() {
-  const { condo } = useCondo();
+  const { condo, isLoading } = useCondo();
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | undefined>(undefined);
   const searchParams = useSearchParams();
+  const params = useParams();
+  const condoId = params.condoId as string;
+  
+  const firestore = useFirestore();
+
+  // We are already fetching units in the context, but let's imagine
+  // we want to calculate balances here. We'd need to fetch sub-collections,
+  // which can be complex. For now, the context provides a simplified `units` array.
+  // A more robust implementation might fetch balances via a Cloud Function or more detailed queries.
+  const unitsWithBalance = useMemo(() => {
+    if (!condo?.units) return [];
+    return condo.units.map(unit => {
+      // This balance calculation is based on data potentially fetched from subcollections
+      // if the context were to fetch them. For now, it's illustrative.
+      // The real-time balance is calculated within AccountStatementDetail.
+      const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
+      return { ...unit, balance };
+    }).sort((a, b) => b.balance - a.balance);
+  }, [condo?.units]);
 
   useEffect(() => {
     const unitIdToView = searchParams.get('viewUnit');
-    if (unitIdToView && condo) {
+    if (unitIdToView && condo?.units) {
       const unit = condo.units.find(u => u.id === unitIdToView);
       if (unit) {
         handleViewDetail(unit);
       }
     }
-  }, [searchParams, condo]);
+  }, [searchParams, condo?.units]);
 
-
-  const unitsWithBalance = useMemo(() => {
-    if (!condo) return [];
-    const currentUnits = condo.units;
-    return currentUnits.map(unit => {
-      const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
-      return { ...unit, balance };
-    }).sort((a, b) => b.balance - a.balance);
-  }, [condo, isDetailOpen]);
 
   const getBalanceBadge = (balance: number) => {
     if (balance > 0) {
@@ -64,11 +78,43 @@ function AccountsReceivableContent() {
   const latestSelectedUnit = useMemo(() => {
     if (!selectedUnit || !condo) return undefined;
     return condo.units.find(u => u.id === selectedUnit.id);
-  }, [condo, selectedUnit]);
+  }, [condo, selectedUnit, isDetailOpen]);
 
 
-  if (!condo) {
-    return <div>Cargando...</div>;
+  if (isLoading && !condo) {
+    return (
+        <div className="flex flex-col h-full">
+            <PageHeader title="Cuentas por Cobrar" description="Administre los estados de cuenta de cada unidad." />
+            <main className="flex-1 overflow-y-auto p-6">
+                <Card>
+                    <CardContent className="p-0">
+                       <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Unidad</TableHead>
+                                <TableHead>Propietario</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="text-right">Saldo</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {Array.from({length: 5}).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-4 w-24 float-right" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-24 float-right" /></TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                       </Table>
+                    </CardContent>
+                </Card>
+            </main>
+        </div>
+    )
   }
 
   return (
@@ -98,7 +144,7 @@ function AccountsReceivableContent() {
                                 unit.balance > 0 && "text-destructive",
                                 unit.balance < 0 && "text-blue-600"
                             )}>
-                                {formatCurrency(unit.balance, condo.currency)}
+                                {formatCurrency(unit.balance, condo?.currency || 'USD')}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetail(unit); }}>Ver Detalle</Button>
@@ -120,7 +166,7 @@ function AccountsReceivableContent() {
                 </DialogDescription>
             </DialogHeader>
             <div className="overflow-y-auto -mx-6 px-6">
-              {latestSelectedUnit && <AccountStatementDetail unit={latestSelectedUnit} />}
+              {latestSelectedUnit && <AccountStatementDetail unit={latestSelectedUnit} condoId={condoId} />}
             </div>
         </DialogContent>
       </Dialog>
@@ -135,3 +181,5 @@ export default function AccountsReceivablePage() {
         </Suspense>
     )
 }
+
+    

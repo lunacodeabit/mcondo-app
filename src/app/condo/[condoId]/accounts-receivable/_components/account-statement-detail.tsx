@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useCondo } from "@/contexts/condo-context";
 import type { Unit, AccountMovement, ManagementComment } from "@/lib/definitions";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -16,20 +16,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PlusCircle, MinusCircle, CalendarPlus, MessageSquarePlus } from "lucide-react";
 import { AccountMovementForm } from "./account-movement-form";
 
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+
 
 interface AccountStatementDetailProps {
     unit: Unit;
+    condoId: string;
 }
 
-export function AccountStatementDetail({ unit }: AccountStatementDetailProps) {
+export function AccountStatementDetail({ unit, condoId }: AccountStatementDetailProps) {
     const { condo, saveAccountMovement, addMonthlyFee, saveManagementComment } = useCondo();
+    const firestore = useFirestore();
     const [comment, setComment] = useState("");
     const [isMovementFormOpen, setMovementFormOpen] = useState(false);
     const [movementType, setMovementType] = useState<'cargo' | 'abono' | undefined>(undefined);
 
+    const accountHistoryQuery = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units', unit.id, 'account_history'), [firestore, condoId, unit.id]);
+    const { data: accountHistory, isLoading: isHistoryLoading } = useCollection<AccountMovement>(accountHistoryQuery);
+
+    const managementHistoryQuery = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units', unit.id, 'management_history'), [firestore, condoId, unit.id]);
+    const { data: managementHistory, isLoading: isManagementHistoryLoading } = useCollection<ManagementComment>(managementHistoryQuery);
+
+
     const balance = useMemo(() => {
-        return (unit.accountHistory || []).reduce((acc, item) => acc + item.amount, 0);
-    }, [unit.accountHistory]);
+        return (accountHistory || []).reduce((acc, item) => acc + item.amount, 0);
+    }, [accountHistory]);
     
     const handleSaveComment = (e: React.FormEvent) => {
         e.preventDefault();
@@ -106,7 +118,7 @@ export function AccountStatementDetail({ unit }: AccountStatementDetailProps) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {(unit.accountHistory || []).map(item => (
+                                    {(accountHistory || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(item => (
                                         <TableRow key={item.id}>
                                             <TableCell className="text-xs">{formatDate(item.date, {day: '2-digit', month: 'short', year: 'numeric'})}</TableCell>
                                             <TableCell>{item.description}</TableCell>
@@ -134,7 +146,7 @@ export function AccountStatementDetail({ unit }: AccountStatementDetailProps) {
                     </form>
                     <ScrollArea className="h-80 pr-4">
                         <div className="space-y-3">
-                            {(unit.adminData?.notes ? [{id: 'initial-note', date: '', comment: unit.adminData.notes, user: 'Nota inicial'}] : []).concat(unit.managementHistory || []).map(item => (
+                            {(managementHistory || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(item => (
                                 <Card key={item.id} className="bg-muted/50">
                                     <CardContent className="p-3 text-sm">
                                         <p className="text-foreground">{item.comment}</p>
@@ -167,3 +179,6 @@ export function AccountStatementDetail({ unit }: AccountStatementDetailProps) {
         </div>
     );
 }
+
+
+    
