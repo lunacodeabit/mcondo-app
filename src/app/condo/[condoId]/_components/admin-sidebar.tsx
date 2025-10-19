@@ -48,10 +48,8 @@ export function AdminSidebar() {
     <>
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-between p-2">
-            <div className="group-data-[state=expanded]:block hidden">
-              <Logo textColor="text-primary-foreground" />
-            </div>
-            <div className="hidden md:block">
+            <Logo textColor="text-primary-foreground" />
+            <div className="hidden md:flex">
                 <SidebarTrigger />
             </div>
         </div>
