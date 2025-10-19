@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import { useCondo } from "@/contexts/condo-context";
 import { PageHeader } from "../_components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,16 +13,27 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AccountStatementDetail } from "./_components/account-statement-detail";
 import type { Unit } from "@/lib/definitions";
+import { useSearchParams } from 'next/navigation';
 
-export default function AccountsReceivablePage() {
+function AccountsReceivableContent() {
   const { condo } = useCondo();
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | undefined>(undefined);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const unitIdToView = searchParams.get('viewUnit');
+    if (unitIdToView && condo) {
+      const unit = condo.units.find(u => u.id === unitIdToView);
+      if (unit) {
+        handleViewDetail(unit);
+      }
+    }
+  }, [searchParams, condo]);
+
 
   const unitsWithBalance = useMemo(() => {
     if (!condo) return [];
-    // Find the latest unit data from the context whenever the modal is opened/closed
-    // This ensures the list view reflects changes made in the detail view
     const currentUnits = condo.units;
     return currentUnits.map(unit => {
       const balance = (unit.accountHistory || []).reduce((acc, mov) => acc + mov.amount, 0);
@@ -50,7 +61,6 @@ export default function AccountsReceivablePage() {
     setSelectedUnit(undefined);
   }
   
-  // Refetch the selected unit from the latest context state before rendering the detail modal
   const latestSelectedUnit = useMemo(() => {
     if (!selectedUnit || !condo) return undefined;
     return condo.units.find(u => u.id === selectedUnit.id);
@@ -101,7 +111,7 @@ export default function AccountsReceivablePage() {
         </Card>
       </main>
 
-      <Dialog open={isDetailOpen} onOpenChange={setDetailOpen}>
+      <Dialog open={isDetailOpen} onOpenChange={handleCloseDetail}>
         <DialogContent className="max-w-4xl h-[90vh]">
             <DialogHeader>
                 <DialogTitle>Estado de Cuenta - Apto. {latestSelectedUnit?.unitNumber}</DialogTitle>
@@ -116,4 +126,12 @@ export default function AccountsReceivablePage() {
       </Dialog>
     </div>
   );
+}
+
+export default function AccountsReceivablePage() {
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <AccountsReceivableContent />
+        </Suspense>
+    )
 }

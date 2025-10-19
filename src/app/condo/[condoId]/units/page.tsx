@@ -53,12 +53,7 @@ export default function UnitsPage() {
   }
 
   const handleViewStatement = (unitId: string) => {
-     // This is a client-side navigation, but it's better to keep it simple for now.
-     // In a real app, you might pass state or use a more complex routing solution.
-     const accountsReceivableUrl = `/condo/${condo?.id}/accounts-receivable`;
-     // We can't directly open the modal, so we navigate to the page.
-     // A more advanced solution would involve global state management (like Zustand or Redux)
-     // or query parameters to trigger the modal on page load.
+     const accountsReceivableUrl = `/condo/${condo?.id}/accounts-receivable?viewUnit=${unitId}`;
      router.push(accountsReceivableUrl);
   }
 
