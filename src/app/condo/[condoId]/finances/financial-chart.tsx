@@ -10,11 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface FinancialChartProps {
   transactions: Transaction[];
-  config: ChartConfig;
 }
 
-export function FinancialChart({ transactions, config }: FinancialChartProps) {
+export function FinancialChart({ transactions }: FinancialChartProps) {
   const [months, setMonths] = useState(6);
+
+  const chartConfig = {
+    ingresos: {
+      label: "Ingresos",
+      color: "hsl(var(--accent))",
+    },
+    egresos: {
+      label: "Egresos",
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig;
 
   const chartData = useMemo(() => {
     const data: { [key: string]: { month: string; ingresos: number; egresos: number } } = {};
@@ -61,7 +71,7 @@ export function FinancialChart({ transactions, config }: FinancialChartProps) {
             </SelectContent>
         </Select>
       </div>
-      <ChartContainer config={config} className="h-full w-full">
+      <ChartContainer config={chartConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />

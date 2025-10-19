@@ -56,17 +56,6 @@ export default function FinancesPage() {
 
   if (!condo) return <div>Cargando...</div>;
 
-  const chartConfig = {
-    ingresos: {
-      label: "Ingresos",
-      color: "hsl(var(--accent))",
-    },
-    egresos: {
-      label: "Egresos",
-      color: "hsl(var(--primary))",
-    },
-  };
-
   return (
     <div className="flex flex-col h-full bg-background">
       <PageHeader title="Finanzas" description="Un resumen de la salud financiera del condominio.">
@@ -129,7 +118,7 @@ export default function FinancesPage() {
                     <CardTitle>Ingresos vs. Egresos</CardTitle>
                 </CardHeader>
                 <CardContent className="pl-2">
-                    <FinancialChart transactions={condo.finances.transactions} config={chartConfig} />
+                    <FinancialChart transactions={condo.finances.transactions} />
                 </CardContent>
             </Card>
             <Card className="lg:col-span-2">
