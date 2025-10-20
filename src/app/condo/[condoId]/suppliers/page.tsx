@@ -32,11 +32,16 @@ export default function SuppliersPage() {
 
   const saveSupplier = (supplier: Omit<Supplier, 'id'> | Supplier) => {
     const colRef = collection(firestore, 'condominiums', condoId, 'suppliers');
-    if ('id' in supplier) {
-        const supRef = doc(colRef, supplier.id);
-        updateDocumentNonBlocking(supRef, supplier);
+    const dataToSave = {
+        ...supplier,
+        rnc: supplier.rnc || '',
+    };
+
+    if ('id' in dataToSave) {
+        const supRef = doc(colRef, dataToSave.id);
+        updateDocumentNonBlocking(supRef, dataToSave);
     } else {
-        addDocumentNonBlocking(colRef, supplier);
+        addDocumentNonBlocking(colRef, dataToSave);
     }
     handleCloseForm();
   };

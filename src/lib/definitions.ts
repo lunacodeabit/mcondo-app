@@ -47,7 +47,7 @@ export type Unit = {
     monthlyFee: number;
     lateFeePercentage: number;
   };
-  paymentResponsibles: Person[];
+  paymentResponsibles?: Person[];
   adminData: {
     notes: string;
   };
@@ -58,7 +58,7 @@ export type Unit = {
 export type Invoice = {
   id: string;
   supplierId: string;
-  invoiceNumber: string;
+  invoiceNumber?: string;
   date: string; // ISO 8601
   dueDate: string; // ISO 8601
   amount: number;
@@ -70,7 +70,7 @@ export type Invoice = {
 export type Supplier = {
   id: string;
   name: string;
-  rnc: string;
+  rnc?: string;
   contact: Person;
   category: string;
 };

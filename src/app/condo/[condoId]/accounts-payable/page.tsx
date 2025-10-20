@@ -65,13 +65,19 @@ export default function AccountsPayablePage() {
 
   const saveInvoice = (invoice: Omit<Invoice, 'id' | 'status'> | Invoice) => {
     const colRef = collection(firestore, 'condominiums', condoId, 'accounts_payable');
-    if ('id' in invoice) {
-        const docRef = doc(colRef, invoice.id);
-        updateDocumentNonBlocking(docRef, invoice);
+    const dataToSave = {
+      ...invoice,
+      date: typeof invoice.date === 'string' ? invoice.date : (invoice.date as Date).toISOString(),
+      dueDate: typeof invoice.dueDate === 'string' ? invoice.dueDate : (invoice.dueDate as Date).toISOString(),
+    };
+
+    if ('id' in dataToSave) {
+        const docRef = doc(colRef, dataToSave.id);
+        updateDocumentNonBlocking(docRef, dataToSave);
     } else {
         const newId = `inv-${new Date().getTime()}`;
         const docRef = doc(colRef, newId);
-        setDocumentNonBlocking(docRef, { ...invoice, id: newId, status: 'Pendiente' }, { merge: true });
+        setDocumentNonBlocking(docRef, { ...dataToSave, id: newId, status: 'Pendiente' }, { merge: true });
     }
     handleCloseForm();
   };
@@ -188,7 +194,7 @@ export default function AccountsPayablePage() {
           </DialogHeader>
           <BillForm 
             suppliers={suppliers || []}
-            onSubmit={saveInvoice} 
+            onSubmit={saveInvoice as any} 
             onCancel={handleCloseForm}
             invoice={invoiceToEdit}
           />

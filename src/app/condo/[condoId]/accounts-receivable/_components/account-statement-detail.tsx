@@ -45,12 +45,7 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
     const saveAccountMovement = (movement: Omit<AccountMovement, 'id'> & { unitId: string }) => {
         const { unitId, ...movementData } = movement;
         const colRef = collection(firestore, 'condominiums', condoId, 'units', unitId, 'account_history');
-        
-        const dataToSave = {
-            ...movementData,
-            date: movementData.date instanceof Date ? movementData.date.toISOString() : movementData.date,
-        };
-        addDocumentNonBlocking(colRef, dataToSave);
+        addDocumentNonBlocking(colRef, movementData);
     };
 
      const addMonthlyFee = (unitId: string) => {
@@ -109,9 +104,10 @@ export function AccountStatementDetail({ unit, condoId }: AccountStatementDetail
         setMovementFormOpen(true);
     };
 
-    const handleSaveMovement = (values: any) => {
+    const handleSaveMovement = (values: { date: Date | string } & Omit<AccountMovement, 'id' | 'date'> & { unitId: string }) => {
         const movementData = {
             ...values,
+            date: values.date instanceof Date ? values.date.toISOString() : values.date,
             amount: values.type === 'abono' ? -Math.abs(values.amount) : Math.abs(values.amount)
         };
         saveAccountMovement(movementData);

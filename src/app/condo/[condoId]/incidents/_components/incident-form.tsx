@@ -29,7 +29,7 @@ const formSchema = z.object({
 type IncidentFormValues = z.infer<typeof formSchema>;
 
 interface IncidentFormProps {
-  onSubmit: (data: IncidentFormValues | (IncidentFormValues & { id: string })) => void;
+  onSubmit: (data: Omit<Incident, 'id'> | Incident) => void;
   onCancel: () => void;
   incident?: Incident;
 }
@@ -54,7 +54,7 @@ export function IncidentForm({ onSubmit, onCancel, incident }: IncidentFormProps
     const dataToSend = {
       ...values,
       date: values.date.toISOString(),
-    }
+    };
     if (incident?.id) {
       onSubmit({ ...dataToSend, id: incident.id });
     } else {
@@ -193,4 +193,3 @@ export function IncidentForm({ onSubmit, onCancel, incident }: IncidentFormProps
     </Form>
   );
 }
-

@@ -37,11 +37,16 @@ export default function IncidentsPage() {
 
   const saveIncident = (incident: Omit<Incident, 'id'> | Incident) => {
     const colRef = collection(firestore, 'condominiums', condoId, 'incidents');
-     if ('id' in incident) {
-        const incidentRef = doc(colRef, incident.id);
-        updateDocumentNonBlocking(incidentRef, incident);
+    const dataToSave = {
+        ...incident,
+        date: typeof incident.date === 'string' ? incident.date : (incident.date as Date).toISOString(),
+    };
+
+    if ('id' in dataToSave) {
+        const incidentRef = doc(colRef, dataToSave.id);
+        updateDocumentNonBlocking(incidentRef, dataToSave);
     } else {
-        addDocumentNonBlocking(colRef, incident);
+        addDocumentNonBlocking(colRef, dataToSave);
     }
     handleCloseForm();
   };

@@ -35,11 +35,20 @@ export default function UnitsPage() {
     const colRef = collection(firestore, 'condominiums', condoId, 'units');
     const { accountHistory, managementHistory, ...unitData } = unit as Unit;
     
-    if ('id' in unitData) {
-        const unitRef = doc(colRef, unitData.id);
-        updateDocumentNonBlocking(unitRef, unitData);
+    const dataToSave = {
+        ...unitData,
+        paymentResponsibles: unit.paymentResponsibles || [],
+        adminData: {
+            ...unit.adminData,
+            notes: unit.adminData?.notes || '',
+        },
+    };
+    
+    if ('id' in dataToSave) {
+        const unitRef = doc(colRef, dataToSave.id);
+        updateDocumentNonBlocking(unitRef, dataToSave);
     } else {
-        addDocumentNonBlocking(colRef, unitData);
+        addDocumentNonBlocking(colRef, dataToSave);
     }
     handleCloseForm();
   };
@@ -157,7 +166,7 @@ export default function UnitsPage() {
           </DialogHeader>
           <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6">
             <UnitForm 
-                onSubmit={saveUnit} 
+                onSubmit={saveUnit as any} 
                 onCancel={handleCloseForm}
                 unit={unitToEdit}
             />
