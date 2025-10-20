@@ -7,9 +7,55 @@ import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { FirebaseProvider, useCollection, useFirestore, useMemoFirebase, useFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, writeBatch, getDocs } from 'firebase/firestore';
 import type { Condo } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { initialCondos } from '@/lib/data';
+import { useEffect, useState } from 'react';
+
+// Seeding function moved here
+async function seedInitialData(firestore: any) {
+  const condosRef = collection(firestore, "condominiums");
+  try {
+    const snapshot = await getDocs(condosRef);
+    if (snapshot.empty) {
+      console.log("No condominiums found. Seeding initial data...");
+      const batch = writeBatch(firestore);
+
+      initialCondos.forEach((condo) => {
+        const condoDocRef = collection(firestore, 'condominiums', condo.id);
+        
+        const { units, accountsPayable, suppliers, employees, communications, incidents, finances, ...condoData } = condo;
+        const { transactions, ...financeData } = finances;
+
+        batch.set(condoDocRef, { ...condoData, finances: financeData });
+        
+        units.forEach(unit => {
+          const { accountHistory, managementHistory, ...unitData } = unit;
+          const unitDocRef = collection(firestore, 'condominiums', condo.id, 'units', unit.id);
+          batch.set(unitDocRef, unitData);
+          accountHistory.forEach(ah => batch.set(collection(firestore, unitDocRef.path, 'account_history', ah.id), ah));
+          managementHistory.forEach(mh => batch.set(collection(firestore, unitDocRef.path, 'management_history', mh.id), mh));
+        });
+        accountsPayable.forEach(ap => batch.set(collection(firestore, 'condominiums', condo.id, 'accounts_payable', ap.id), ap));
+        suppliers.forEach(s => batch.set(collection(firestore, 'condominiums', condo.id, 'suppliers', s.id), s));
+        transactions.forEach(t => batch.set(collection(firestore, 'condominiums', condo.id, 'financial_transactions', t.id), t));
+        incidents.forEach(i => batch.set(collection(firestore, 'condominiums', condo.id, 'incidents', i.id), i));
+      });
+
+      await batch.commit();
+      console.log("Initial data seeded successfully.");
+      return true; // Indicate that seeding was performed
+    } else {
+      console.log("Condominiums found. Skipping seed.");
+      return false; // Indicate that no seeding was needed
+    }
+  } catch (error) {
+    console.error("Error seeding data: ", error);
+    return false;
+  }
+}
+
 
 function CondoSelectionContent() {
   const { isFirebaseLoading } = useFirebase();
@@ -23,14 +69,31 @@ function CondoSelectionContent() {
 
 function CondoList() {
     const firestore = useFirestore();
-    const condosQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'condominiums');
+    const [isSeeding, setIsSeeding] = useState(true);
+    const [seedTrigger, setSeedTrigger] = useState(0);
+
+    useEffect(() => {
+      if(firestore) {
+        setIsSeeding(true);
+        seedInitialData(firestore).then((wasSeeded) => {
+            if(wasSeeded) {
+                // If data was seeded, we trigger a re-fetch by changing state
+                setSeedTrigger(prev => prev + 1);
+            }
+            setIsSeeding(false);
+        });
+      }
     }, [firestore]);
+
+
+    const condosQuery = useMemoFirebase(() => {
+        if (!firestore || isSeeding) return null; // Don't query while seeding
+        return collection(firestore, 'condominiums');
+    }, [firestore, isSeeding, seedTrigger]);
 
     const { data: condos, isLoading } = useCollection<Condo>(condosQuery);
     
-    if (isLoading) {
+    if (isLoading || isSeeding) {
         return <CondoListSkeleton />;
     }
 
@@ -38,7 +101,7 @@ function CondoList() {
       return (
         <div className="text-center text-muted-foreground py-10">
           <p>No se encontraron condominios.</p>
-          <p className="text-sm mt-2">Los datos iniciales se están cargando. Intente refrescar en un momento.</p>
+          <p className="text-sm mt-2">Los datos iniciales pueden estar cargando. Intente refrescar en un momento.</p>
         </div>
       )
     }
