@@ -7,7 +7,7 @@ import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { FirebaseProvider, useCollection, useFirestore, useMemoFirebase, useFirebase } from '@/firebase';
-import { collection, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, writeBatch, getDocs, doc } from 'firebase/firestore';
 import type { Condo } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initialCondos } from '@/lib/data';
@@ -23,7 +23,7 @@ async function seedInitialData(firestore: any) {
       const batch = writeBatch(firestore);
 
       initialCondos.forEach((condo) => {
-        const condoDocRef = collection(firestore, 'condominiums', condo.id);
+        const condoDocRef = doc(firestore, 'condominiums', condo.id);
         
         const { units, accountsPayable, suppliers, employees, communications, incidents, finances, ...condoData } = condo;
         const { transactions, ...financeData } = finances;
@@ -32,15 +32,15 @@ async function seedInitialData(firestore: any) {
         
         units.forEach(unit => {
           const { accountHistory, managementHistory, ...unitData } = unit;
-          const unitDocRef = collection(firestore, 'condominiums', condo.id, 'units', unit.id);
+          const unitDocRef = doc(firestore, 'condominiums', condo.id, 'units', unit.id);
           batch.set(unitDocRef, unitData);
-          accountHistory.forEach(ah => batch.set(collection(firestore, unitDocRef.path, 'account_history', ah.id), ah));
-          managementHistory.forEach(mh => batch.set(collection(firestore, unitDocRef.path, 'management_history', mh.id), mh));
+          accountHistory.forEach(ah => batch.set(doc(firestore, unitDocRef.path, 'account_history', ah.id), ah));
+          managementHistory.forEach(mh => batch.set(doc(firestore, unitDocRef.path, 'management_history', mh.id), mh));
         });
-        accountsPayable.forEach(ap => batch.set(collection(firestore, 'condominiums', condo.id, 'accounts_payable', ap.id), ap));
-        suppliers.forEach(s => batch.set(collection(firestore, 'condominiums', condo.id, 'suppliers', s.id), s));
-        transactions.forEach(t => batch.set(collection(firestore, 'condominiums', condo.id, 'financial_transactions', t.id), t));
-        incidents.forEach(i => batch.set(collection(firestore, 'condominiums', condo.id, 'incidents', i.id), i));
+        accountsPayable.forEach(ap => batch.set(doc(firestore, 'condominiums', condo.id, 'accounts_payable', ap.id), ap));
+        suppliers.forEach(s => batch.set(doc(firestore, 'condominiums', condo.id, 'suppliers', s.id), s));
+        transactions.forEach(t => batch.set(doc(firestore, 'condominiums', condo.id, 'financial_transactions', t.id), t));
+        incidents.forEach(i => batch.set(doc(firestore, 'condominiums', condo.id, 'incidents', i.id), i));
       });
 
       await batch.commit();
