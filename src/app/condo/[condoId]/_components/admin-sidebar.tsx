@@ -33,7 +33,7 @@ export function AdminSidebar() {
   const condoId = params.condoId as string;
 
   const navItems = [
-    { href: `/condo/${condoId}`, icon: LayoutDashboard, label: "Finanzas" },
+    { href: `/condo/${condoId}`, icon: LayoutDashboard, label: "Dashboard" },
     { href: `/condo/${condoId}/units`, icon: Building2, label: "Unidades" },
     { href: `/condo/${condoId}/accounts-receivable`, icon: Users, label: "Cuentas por Cobrar" },
     { href: `/condo/${condoId}/accounts-payable`, icon: Receipt, label: "Cuentas por Pagar" },
@@ -76,7 +76,7 @@ export function AdminSidebar() {
       <SidebarFooter className="border-t border-sidebar-border mt-auto">
          <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/" passHref>
+              <Link href="/condo" passHref>
                 <SidebarMenuButton tooltip={{ children: 'Volver', side: "right" }}>
                   <ChevronLeft />
                   <span>Volver a Condominios</span>

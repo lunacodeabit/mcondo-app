@@ -8,8 +8,8 @@ service cloud.firestore {
     }
 
     match /condominiums/{condominiumId} {
-      allow get: if request.auth != null;
-      allow list: if request.auth != null;
+      allow list: if true; // Allow anyone to see the list of condominiums
+      allow get: if request.auth != null; // Require authentication to read a single condominium's details
       allow create: if request.auth != null;
       allow update: if request.auth != null;
       allow delete: if request.auth != null && isAdmin(condominiumId);

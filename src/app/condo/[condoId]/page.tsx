@@ -76,7 +76,7 @@ export default function FinancesPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <PageHeader title="Finanzas" description={`Un resumen de la salud financiera de ${condo.name}.`}>
+      <PageHeader title="Gestión Financiera" description={`Un resumen de la salud financiera de ${condo.name}.`}>
         <Dialog open={isModalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
                 <Button>

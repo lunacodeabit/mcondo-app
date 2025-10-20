@@ -31,10 +31,10 @@ export function KpiCard({ title, value, icon: Icon, color, footer, isLoading }: 
   }
 
   return (
-    <Card>
+    <Card className="bg-card/50">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-4 w-4 text-muted-foreground", color)} />
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <Icon className={cn("h-6 w-6", color || 'text-muted-foreground')} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
