@@ -21,14 +21,17 @@ export default function ReportsPage() {
   const { condo, condoId } = useCondo();
   const firestore = useFirestore();
 
-  const unitsCollection = useMemoFirebase(() => collection(firestore, 'condominiums', condoId, 'units'), [firestore, condoId]);
+  const unitsCollection = useMemoFirebase(() => {
+    if (!firestore || !condoId) return null;
+    return collection(firestore, 'condominiums', condoId, 'units');
+  }, [firestore, condoId]);
   const { data: units, isLoading: areUnitsLoading } = useCollection<Unit>(unitsCollection);
 
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [areBalancesLoading, setAreBalancesLoading] = useState(true);
 
   useEffect(() => {
-    if (!units) return;
+    if (!units || !firestore || !condoId) return;
 
     const fetchBalances = async () => {
       setAreBalancesLoading(true);
@@ -63,7 +66,7 @@ export default function ReportsPage() {
     const tableColumn = ["Unidad", "Propietario", "Estado", "Saldo"];
     const tableRows: (string | number)[][] = [];
 
-    units.forEach(unit => {
+    (units || []).forEach(unit => {
         const balance = balances[unit.id] || 0;
         const status = balance <= 0 ? "Al día" : "Debe";
         const row = [
