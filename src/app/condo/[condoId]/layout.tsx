@@ -12,9 +12,6 @@ export default function CondoAdminLayout({
   children: React.ReactNode;
 }) {
 
-  // The check for condo existence will now happen inside the provider or page
-  // as data is fetched asynchronously.
-
   return (
     <FirebaseProvider>
       <CondoProvider condoId={params.condoId}>
@@ -34,5 +31,3 @@ export default function CondoAdminLayout({
     </FirebaseProvider>
   );
 }
-
-    

@@ -14,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 function CondoSelectionContent() {
   const { isFirebaseLoading } = useFirebase();
   
-  // Conditionally call hooks only when Firebase is ready
   if (isFirebaseLoading) {
     return <CondoListSkeleton />;
   }
@@ -24,16 +23,29 @@ function CondoSelectionContent() {
 
 function CondoList() {
     const firestore = useFirestore();
-    const condosQuery = useMemoFirebase(() => collection(firestore, 'condominiums'), [firestore]);
+    const condosQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'condominiums');
+    }, [firestore]);
+
     const { data: condos, isLoading } = useCollection<Condo>(condosQuery);
     
     if (isLoading) {
         return <CondoListSkeleton />;
     }
 
+    if (!condos || condos.length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-10">
+          <p>No se encontraron condominios.</p>
+          <p className="text-sm mt-2">Los datos iniciales se están cargando. Intente refrescar en un momento.</p>
+        </div>
+      )
+    }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!isLoading && condos?.map((condo) => (
+            {condos.map((condo) => (
               <Card key={condo.id}>
                 <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                   <div className="p-3 bg-primary/10 rounded-full">
