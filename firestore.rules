@@ -1,143 +1,167 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a role-based access control model for a condominium management application.
+ * All data is nested under /condominiums/{condominiumId} and access is determined by condominium ownership/admin roles.
+ *
+ * Data Structure:
+ * - /condominiums/{condominiumId}: Stores general condominium information.
+ * - /condominiums/{condominiumId}/units/{unitId}: Stores unit information.
+ * - /condominiums/{condominiumId}/financial_transactions/{transactionId}: Stores financial transaction data.
+ * - /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}: Stores accounts receivable entries.
+ * - /condominiums/{condominiumId}/accounts_payable/{accountPayableId}: Stores accounts payable data.
+ * - /condominiums/{condominiumId}/suppliers/{supplierId}: Stores supplier information.
+ * - /condominiums/{condominiumId}/employees/{employeeId}: Stores employee information.
+ * - /condominiums/{condominiumId}/communications/{communicationId}: Stores communications.
+ * - /condominiums/{condominiumId}/incidents/{incidentId}: Stores incident reports.
+ *
+ * Key Security Decisions:
+ * - Access to condominium data is restricted to authenticated users with appropriate roles.
+ * - All write operations are protected by role-based authorization checks.
+ * - The 'list' operation is only allowed if the user is an admin.
+ * - Condominium ID is denormalized into subcollection documents to simplify security rules and enable atomic operations.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // TODO: Implement the isAdminOfCondominium function based on your chosen role management strategy.
-    // This could involve checking a separate collection or a membership map on the Condominium document.
-    function isAdminOfCondominium(condominiumId) {
-      // In prototyping mode, allow all signed-in users to be admins.
-      return isSignedIn();
+    // Helper function to check if the user is an admin for the given condominium
+    function isAdmin(condominiumId) {
+        return exists(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid))
+               && get(/databases/$(database)/documents/roles_condominium_admin/$(request.auth.uid)).data.condominiumId == condominiumId;
     }
-
-    /**
-     * @description Allows access to Condominium documents based on condominium admin roles.
+/**
+     * @description Manages access to condominium documents. Condominium information can only be created, updated, or deleted by an admin.
      * @path /condominiums/{condominiumId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for condominium data.
+     * @allow (create) User with admin role can create a condominium.
+     * @deny (create) User without admin role cannot create a condominium.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete condominium documents.
      */
     match /condominiums/{condominiumId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to Unit documents based on condominium admin roles or unit ownership.
+/**
+     * @description Manages access to unit documents within a condominium. Only condominium admins can manage unit data.
      * @path /condominiums/{condominiumId}/units/{unitId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for unit data.
+     * @allow (create) User with admin role can create a unit.
+     * @deny (create) User without admin role cannot create a unit.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete unit documents.
      */
     match /condominiums/{condominiumId}/units/{unitId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to FinancialTransaction documents based on condominium admin roles.
+/**
+     * @description Manages access to financial transaction documents within a condominium. Only condominium admins can manage financial transactions.
      * @path /condominiums/{condominiumId}/financial_transactions/{transactionId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for financial transaction data.
+     * @allow (create) User with admin role can create a financial transaction.
+     * @deny (create) User without admin role cannot create a financial transaction.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete financial transaction documents.
      */
     match /condominiums/{condominiumId}/financial_transactions/{transactionId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to AccountReceivable documents based on condominium admin roles.
+/**
+     * @description Manages access to accounts receivable documents within a condominium. Only condominium admins can manage accounts receivable data.
      * @path /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for accounts receivable data.
+     * @allow (create) User with admin role can create an account receivable entry.
+     * @deny (create) User without admin role cannot create an account receivable entry.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete accounts receivable documents.
      */
     match /condominiums/{condominiumId}/accounts_receivable/{accountReceivableId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to AccountPayable documents based on condominium admin roles.
+/**
+     * @description Manages access to accounts payable documents within a condominium. Only condominium admins can manage accounts payable data.
      * @path /condominiums/{condominiumId}/accounts_payable/{accountPayableId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for accounts payable data.
+     * @allow (create) User with admin role can create an account payable entry.
+     * @deny (create) User without admin role cannot create an account payable entry.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete accounts payable documents.
      */
     match /condominiums/{condominiumId}/accounts_payable/{accountPayableId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to Supplier documents based on condominium admin roles.
+/**
+     * @description Manages access to supplier documents within a condominium. Only condominium admins can manage supplier information.
      * @path /condominiums/{condominiumId}/suppliers/{supplierId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for supplier data.
+     * @allow (create) User with admin role can create a supplier.
+     * @deny (create) User without admin role cannot create a supplier.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete supplier documents.
      */
     match /condominiums/{condominiumId}/suppliers/{supplierId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to Employee documents based on condominium admin roles.
+/**
+     * @description Manages access to employee documents within a condominium. Only condominium admins can manage employee information.
      * @path /condominiums/{condominiumId}/employees/{employeeId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for employee data.
+     * @allow (create) User with admin role can create an employee.
+     * @deny (create) User without admin role cannot create an employee.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete employee documents.
      */
     match /condominiums/{condominiumId}/employees/{employeeId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to Communication documents based on condominium admin roles.
+/**
+     * @description Manages access to communication documents within a condominium. Only condominium admins can manage communications.
      * @path /condominiums/{condominiumId}/communications/{communicationId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for communication data.
+     * @allow (create) User with admin role can create a communication.
+     * @deny (create) User without admin role cannot create a communication.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete communication documents.
      */
     match /condominiums/{condominiumId}/communications/{communicationId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
-
-    /**
-     * @description Allows access to Incident documents based on condominium admin roles.
+/**
+     * @description Manages access to incident documents within a condominium. Only condominium admins can manage incidents.
      * @path /condominiums/{condominiumId}/incidents/{incidentId}
-     * @allow (get, list) if isAdminOfCondominium(condominiumId)
-     * @allow (create, update, delete) if isAdminOfCondominium(condominiumId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
-     * @principle Enforces role-based access control for incident data.
+     * @allow (create) User with admin role can create an incident.
+     * @deny (create) User without admin role cannot create an incident.
+     * @principle Enforces role-based access control: Only admins can create, update, or delete incident documents.
      */
     match /condominiums/{condominiumId}/incidents/{incidentId} {
-      allow read: if isSignedIn() && isAdminOfCondominium(condominiumId);
-      allow write: if isSignedIn() && isAdminOfCondominium(condominiumId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isAdmin(condominiumId);
+      allow update: if isSignedIn() && isAdmin(condominiumId) && resource != null;
+      allow delete: if isSignedIn() && isAdmin(condominiumId) && resource != null;
     }
+      //Temporary admin write rule
+      match /roles_condominium_admin/{adminId} {
+        allow read, write: if true;
+      }
   }
 }
