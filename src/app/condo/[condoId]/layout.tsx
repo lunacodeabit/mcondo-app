@@ -2,7 +2,7 @@
 import { CondoProvider } from "@/contexts/condo-context";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
-import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { FirebaseProvider } from "@/firebase/provider";
 
 export default function CondoAdminLayout({
   params,
@@ -16,7 +16,7 @@ export default function CondoAdminLayout({
   // as data is fetched asynchronously.
 
   return (
-    <FirebaseClientProvider>
+    <FirebaseProvider>
       <CondoProvider condoId={params.condoId}>
         <SidebarProvider>
           <div className="flex min-h-screen">
@@ -31,7 +31,7 @@ export default function CondoAdminLayout({
           </div>
         </SidebarProvider>
       </CondoProvider>
-    </FirebaseClientProvider>
+    </FirebaseProvider>
   );
 }
 

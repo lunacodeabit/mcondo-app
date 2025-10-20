@@ -6,39 +6,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
-import { FirebaseClientProvider, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { FirebaseProvider, useCollection, useFirestore, useMemoFirebase, useFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Condo } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function CondoSelectionContent() {
-  const firestore = useFirestore();
-  const condosQuery = useMemoFirebase(() => collection(firestore, 'condominiums'), [firestore]);
-  const { data: condos, isLoading } = useCollection<Condo>(condosQuery);
+  const { isFirebaseLoading } = useFirebase();
+  
+  // Conditionally call hooks only when Firebase is ready
+  if (isFirebaseLoading) {
+    return <CondoListSkeleton />;
+  }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="p-4 border-b">
-        <Logo />
-      </header>
-      <main className="p-6">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Seleccione un Condominio</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading && Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[200px]" />
-                    <Skeleton className="h-4 w-[250px]" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
-            ))}
+  return <CondoList />;
+}
+
+function CondoList() {
+    const firestore = useFirestore();
+    const condosQuery = useMemoFirebase(() => collection(firestore, 'condominiums'), [firestore]);
+    const { data: condos, isLoading } = useCollection<Condo>(condosQuery);
+    
+    if (isLoading) {
+        return <CondoListSkeleton />;
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {!isLoading && condos?.map((condo) => (
               <Card key={condo.id}>
                 <CardHeader className="flex flex-row items-center gap-4 space-y-0">
@@ -60,20 +54,46 @@ function CondoSelectionContent() {
                 </CardContent>
               </Card>
             ))}
-          </div>
         </div>
-      </main>
-    </div>
-  );
+    )
+}
+
+function CondoListSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[250px]" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+    )
 }
 
 
 export default function CondoSelectionPage() {
     return (
-        <FirebaseClientProvider>
-            <CondoSelectionContent />
-        </FirebaseClientProvider>
+        <FirebaseProvider>
+            <div className="min-h-screen bg-background text-foreground">
+              <header className="p-4 border-b">
+                <Logo />
+              </header>
+              <main className="p-6">
+                <div className="max-w-5xl mx-auto">
+                  <h1 className="text-2xl font-bold mb-6">Seleccione un Condominio</h1>
+                  <CondoSelectionContent />
+                </div>
+              </main>
+            </div>
+        </FirebaseProvider>
     )
 }
-
-    
