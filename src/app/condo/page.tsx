@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
-import { FirebaseProvider, useCollection, useFirestore, useMemoFirebase, useFirebase } from '@/firebase';
+import { FirebaseProvider, useCollection, useFirestore, useMemoFirebase, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, writeBatch, getDocs, doc } from 'firebase/firestore';
 import type { Condo } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,8 +34,8 @@ async function seedInitialData(firestore: any) {
           const { accountHistory, managementHistory, ...unitData } = unit;
           const unitDocRef = doc(firestore, 'condominiums', condo.id, 'units', unit.id);
           batch.set(unitDocRef, unitData);
-          accountHistory.forEach(ah => batch.set(doc(firestore, unitDocRef.path, 'account_history', ah.id), ah));
-          managementHistory.forEach(mh => batch.set(doc(firestore, unitDocRef.path, 'management_history', mh.id), mh));
+          accountHistory.forEach(ah => batch.set(doc(unitDocRef, 'account_history', ah.id), ah));
+          managementHistory.forEach(mh => batch.set(doc(unitDocRef, 'management_history', mh.id), mh));
         });
         accountsPayable.forEach(ap => batch.set(doc(firestore, 'condominiums', condo.id, 'accounts_payable', ap.id), ap));
         suppliers.forEach(s => batch.set(doc(firestore, 'condominiums', condo.id, 'suppliers', s.id), s));
@@ -50,8 +50,16 @@ async function seedInitialData(firestore: any) {
       console.log("Condominiums found. Skipping seed.");
       return false; // Indicate that no seeding was needed
     }
-  } catch (error) {
-    console.error("Error seeding data: ", error);
+  } catch (error: any) {
+    if (error.code === 'permission-denied') {
+        const contextualError = new FirestorePermissionError({
+          path: 'condominiums',
+          operation: 'write',
+          requestResourceData: { message: 'Batch write for initial data seeding.' }
+        });
+        errorEmitter.emit('permission-error', contextualError);
+    }
+    // No console.error here to avoid duplicate error messages
     return false;
   }
 }
