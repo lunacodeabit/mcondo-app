@@ -1,17 +1,41 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo } from '@/components/logo';
+"use client";
 
-export default function HomePage() {
+import { useEffect } from "react";
+import Link from "next/link";
+
+import { db } from "../lib/firebase";
+import { collection, getCountFromServer } from "firebase/firestore";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Logo } from "@/components/logo";
+
+export default function Home() {
+  // 🔎 Probar conexión a Firestore al cargar la página
+  useEffect(() => {
+    (async () => {
+      try {
+        const coll = collection(db, "_healthcheck"); // colección dummy
+        await getCountFromServer(coll);
+        console.log("✅ Firestore conectado correctamente");
+      } catch (err) {
+        console.error("❌ Error conectando con Firestore:", err);
+      }
+    })();
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* HEADER */}
       <header className="bg-gray-100 dark:bg-gray-800 px-4 py-2 md:px-6 md:py-3">
         <div className="container mx-auto flex items-center justify-between">
           <Link href="#" className="flex items-center gap-2" prefetch={false}>
             <Logo />
-            <span className="text-lg font-semibold">CondoMAX</span>
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">
+              CondoMAX
+            </span>
           </Link>
+
           <div className="flex items-center gap-4">
             <Button asChild>
               <Link href="/condo">Login</Link>
@@ -19,23 +43,29 @@ export default function HomePage() {
           </div>
         </div>
       </header>
-      <main className="flex-1 bg-gray-50 dark:bg-gray-900 py-12 md:py-24">
+
+      {/* HERO / LANDING */}
+      <main className="flex-1 py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Texto lado izquierdo */}
             <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
                 Modernize Your Condo Management
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                CondoMAX is a comprehensive platform to streamline your condominium's operations. From finances and
-                maintenance to resident communication, we've got you covered.
+                CondoMAX is a comprehensive platform to streamline your condominium's operations.
+                From finances and maintenance to resident communication, we've got you covered.
               </p>
+
               <div className="flex gap-4">
                 <Button asChild>
                   <Link href="/condo">Get Started</Link>
                 </Button>
               </div>
             </div>
+
+            {/* Tarjetas lado derecho */}
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
@@ -47,6 +77,7 @@ export default function HomePage() {
                   </CardDescription>
                 </CardContent>
               </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Incidents</CardTitle>
@@ -57,6 +88,7 @@ export default function HomePage() {
                   </CardDescription>
                 </CardContent>
               </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Communications</CardTitle>
@@ -67,6 +99,7 @@ export default function HomePage() {
                   </CardDescription>
                 </CardContent>
               </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Account Statement</CardTitle>
@@ -81,6 +114,8 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* FOOTER */}
       <footer className="bg-gray-100 dark:bg-gray-800 px-4 py-6 md:px-6">
         <div className="container mx-auto flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <p>&copy; 2024 CondoMAX. All rights reserved.</p>
