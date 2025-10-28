@@ -1,6 +1,6 @@
 // src/dev/seed.ts
 import { Timestamp } from "firebase/firestore";
-import { createDoc } from "../services/firestore";
+import { createDoc } from "../lib/firestore";
 
 export async function seedDemo() {
   // 1) Crear condominio (esto lo hace un super_admin)
@@ -25,3 +25,5 @@ export async function seedDemo() {
 
   console.log("Seed OK → tenant_id:", tenant_id);
 }
+
+seedDemo();
