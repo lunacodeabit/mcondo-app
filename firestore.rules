@@ -17,22 +17,24 @@ service cloud.firestore {
 
     // --- Rules for Top-Level Collections ---
 
+    // Healthcheck collection
+    match /_healthcheck/{docId} {
+      allow read: if true;
+    }
+
     // Condominiums collection
     match /condominiums/{condominiumId} {
-      // ANYONE can see the list of condominiums (The Menu)
-      allow list: if true;
-      
-      // ONLY a signed-in user can see the details of a specific condominium (Enter the Restaurant)
-      allow get: if isSignedIn();
+      // ANYONE can read the list of condominiums
+      allow read: if true;
 
       // ONLY an admin for that specific condo can modify it (Enter the Office)
-      allow create, update, delete: if isAdmin(condominiumId);
+      allow write: if isAdmin(condominiumId);
 
       // --- Rules for Sub-Collections ---
       // For any sub-collection within a condominium...
       match /{subcollection}/{documentId} {
         // A user must be signed-in to read any data from within a condominium.
-        allow read: if isSignedIn();
+        allow read: if true;
 
         // And only an admin can write data.
         allow write: if isAdmin(condominiumId);

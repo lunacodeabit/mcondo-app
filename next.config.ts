@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  devIndicators: {
+    allowedDevOrigins: [
+      '27891-firebase-mcondo-app-1761005543452.cluster-udxxdyopu5c7cwhhtg6mmadhvs.cloudworkstations.dev'
+    ]
+  }
 };
 
 export default nextConfig;
