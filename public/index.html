@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de Administración de Condominios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2 class="font-poppins">CondoAdmin</h2>
+    <nav>
+      <ul>
+        <li><a href="index.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="unidades.html"><i data-lucide="building-2"></i> Unidades</a></li>
+        <li><a href="#"><i data-lucide="users"></i> Propietarios</a></li>
+        <li><a href="#"><i data-lucide="landmark"></i> Finanzas</a></li>
+        <li><a href="#"><i data-lucide="megaphone"></i> Comunicados</a></li>
+        <li><a href="#"><i data-lucide="alert-triangle"></i> Incidentes</a></li>
+        <li><a href="#"><i data-lucide="briefcase"></i> Empleados</a></li>
+        <li><a href="#"><i data-lucide="truck"></i> Proveedores</a></li>
+        <li><a href="#"><i data-lucide="settings"></i> Configuración</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1 class="font-poppins">Dashboard</h1>
+      <div style="color: var(--text-secondary);">Bienvenida, Ana!</div>
+    </header>
+
+    <main>
+      <div class="kpi-container">
+        <div class="card kpi-card">
+          <h3>Total de Unidades</h3>
+          <div class="amount" id="total-unidades">--</div>
+        </div>
+        <div class="card kpi-card">
+          <h3>Ingresos del Mes</h3>
+          <div class="amount positive">$12,450.00</div>
+        </div>
+        <div class="card kpi-card">
+          <h3>Egresos del Mes</h3>
+          <div class="amount negative">$4,120.50</div>
+        </div>
+        <div class="card kpi-card">
+          <h3>Incidentes Abiertos</h3>
+          <div class="amount">3</div>
+        </div>
+      </div>
+      
+      <div class="main-dashboard">
+        <div class="card">
+            <h3>Comunicados Recientes</h3>
+            <ul>
+                <li><strong>Mantenimiento Piscina:</strong> Estará cerrada del 15 al 20 de Julio.</li>
+                <li><strong>Asamblea General:</strong> Convocatoria para el Sábado 25 de Julio a las 5pm.</li>
+                <li><strong>Fumigación de Áreas Comunes:</strong> Se realizará el día 18 de Julio.</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Actividad Reciente</h3>
+            <ul>
+                <li>Nuevo incidente reportado en unidad 502.</li>
+                <li>Pago de cuota de mantenimiento de unidad 301.</li>
+                <li>Empleado 'Juan Perez' marcado como inactivo.</li>
+            </ul>
+        </div>
+      </div>
+
+    </main>
+  </div>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script src="auth.js"></script>
+  <script src="dashboard.js"></script>
+
+</body>
+</html>

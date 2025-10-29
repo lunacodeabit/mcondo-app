@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unidades - Plataforma de Administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2 class="font-poppins">CondoAdmin</h2>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="unidades.html" class="active"><i data-lucide="building-2"></i> Unidades</a></li>
+        <li><a href="propietarios.html"><i data-lucide="users"></i> Propietarios</a></li>
+        <li><a href="#"><i data-lucide="landmark"></i> Finanzas</a></li>
+        <li><a href="#"><i data-lucide="megaphone"></i> Comunicados</a></li>
+        <li><a href="#"><i data-lucide="alert-triangle"></i> Incidentes</a></li>
+        <li><a href="#"><i data-lucide="briefcase"></i> Empleados</a></li>
+        <li><a href="#"><i data-lucide="truck"></i> Proveedores</a></li>
+        <li><a href="#"><i data-lucide="settings"></i> Configuración</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1 class="font-poppins">Gestión de Unidades</h1>
+      <button id="add-unit-button" class="btn btn-primary"><i data-lucide="plus"></i> Añadir Unidad</button>
+    </header>
+
+    <main>
+      <div class="card">
+        <table id="units-table">
+          <thead>
+            <tr>
+              <th>No. Apto</th>
+              <th>Propietario</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="add-unit-modal" class="modal">
+    <div class="modal-content large">
+      <span class="close-button">&times;</span>
+      <h2 class="font-poppins">Agregar Nueva Unidad</h2>
+      <form id="add-unit-form">
+        <div class="form-grid">
+          
+          <div class="form-group">
+            <label for="unit-number">No. Apto</label>
+            <input type="text" id="unit-number" required>
+          </div>
+          <div class="form-group">
+            <label for="unit-type">Tipo Unidad</label>
+            <select id="unit-type">
+                <option value="Apartamento">Apartamento</option>
+                <option value="Penthouse">Penthouse</option>
+                <option value="Local Comercial">Local Comercial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="unit-ncf">¿Requiere NCF?</label>
+            <select id="unit-ncf"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="unit-owner">Propietario</label>
+            <input type="text" id="unit-owner" required>
+          </div>
+
+          <div class="form-group">
+            <label for="unit-phone">Teléfonos</label>
+            <input type="text" id="unit-phone">
+          </div>
+          <div class="form-group">
+            <label for="unit-whatsapp">Whatsapp</label>
+            <input type="text" id="unit-whatsapp">
+          </div>
+          <div class="form-group">
+            <label for="unit-email1">Email 1</label>
+            <input type="email" id="unit-email1">
+          </div>
+          <div class="form-group">
+            <label for="unit-email2">Email 2</label>
+            <input type="email" id="unit-email2">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="unit-comment">Comentario</label>
+            <textarea id="unit-comment" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="unit-habited">¿Habitado?</label>
+            <select id="unit-habited"><option value="Si">Si</option><option value="No">No</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-airbnb">¿AirBnB?</label>
+            <select id="unit-airbnb"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-rented">¿Alquilado?</label>
+            <select id="unit-rented"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-represented">¿Representado?</label>
+            <select id="unit-represented"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+
+        </div>
+
+        <h3 class="font-poppins">Configuración Financiera</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="unit-fee">Cuota Mensual</label>
+            <input type="number" id="unit-fee" value="0">
+          </div>
+          <div class="form-group">
+            <label for="unit-fee-notification">Notif. Cuotas Email</label>
+            <select id="unit-fee-notification"><option value="Si">Si</option><option value="No">No</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-doc-name">Ver Nombre en Docs</label>
+            <select id="unit-doc-name"><option value="Si">Si</option><option value="No">No</option></select>
+          </div>
+        </div>
+        
+        <h4 class="font-poppins">Distribución de Cuotas</h4>
+        <div class="form-grid">
+          <div class="form-group"><label>Mantenimiento</label><select id="dist-maintenance"><option>Propietario</option><option>Inquilino</option><option>Representante</option></select></div>
+          <div class="form-group"><label>Gas</label><select id="dist-gas"><option>Propietario</option><option>Inquilino</option><option>Representante</option></select></div>
+          <div class="form-group"><label>Cargos</label><select id="dist-charges"><option>Propietario</option><option>Inquilino</option><option>Representante</option></select></div>
+          <div class="form-group"><label>Moras</label><select id="dist-arrears"><option>Propietario</option><option>Inquilino</option><option>Representante</option></select></div>
+          <div class="form-group"><label>Envio de CxC</label><select id="dist-cxc"><option>Propietario</option><option>Inquilino</option><option>Representante</option></select></div>
+        </div>
+
+        <h3 class="font-poppins">Configuración Administrativa</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="unit-board-member">Miembro Junta Admin.</label>
+            <select id="unit-board-member"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-board-name">Nombre Miembro JA</label>
+            <input type="text" id="unit-board-name">
+          </div>
+          <div class="form-group">
+            <label for="unit-payment-agreement">¿Acuerdo de Pago?</label>
+            <select id="unit-payment-agreement"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-legal">¿Apto en Legal?</label>
+            <select id="unit-legal"><option value="No">No</option><option value="Si">Si</option></select>
+          </div>
+          <div class="form-group">
+            <label for="unit-status">Estado</label>
+            <select id="unit-status"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary close-button-form">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Unidad</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script src="auth.js"></script>
+  <script src="unidades.js"></script>
+
+</body>
+</html>

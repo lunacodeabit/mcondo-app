@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finanzas - Plataforma de Administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2 class="font-poppins">CondoAdmin</h2>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="unidades.html"><i data-lucide="building-2"></i> Unidades</a></li>
+        <li><a href="propietarios.html"><i data-lucide="users"></i> Propietarios</a></li>
+        <li><a href="finanzas.html" class="active"><i data-lucide="landmark"></i> Finanzas</a></li>
+        <li><a href="#"><i data-lucide="megaphone"></i> Comunicados</a></li>
+        <li><a href="#"><i data-lucide="alert-triangle"></i> Incidentes</a></li>
+        <li><a href="#"><i data-lucide="briefcase"></i> Empleados</a></li>
+        <li><a href="#"><i data-lucide="truck"></i> Proveedores</a></li>
+        <li><a href="#"><i data-lucide="settings"></i> Configuración</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1 class="font-poppins">Gestión Financiera</h1>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-link active" data-tab="ingresos">Ingresos</button>
+            <button class="tab-link" data-tab="egresos">Egresos</button>
+        </div>
+
+        <div id="ingresos" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Listado de Ingresos</h3>
+                    <button id="add-income-button" class="btn btn-primary"><i data-lucide="plus"></i> Registrar Ingreso</button>
+                </div>
+                <table id="income-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Unidad</th>
+                            <th>Concepto</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="egresos" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Listado de Egresos</h3>
+                    <button id="add-expense-button" class="btn btn-primary"><i data-lucide="plus"></i> Registrar Egreso</button>
+                </div>
+                <table id="expense-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Proveedor/Concepto</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+  </div>
+  
+  <!-- TODO: Modals for adding income and expenses will be added here -->
+
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script src="auth.js"></script>
+  <script src="finanzas.js"></script>
+
+</body>
+</html>

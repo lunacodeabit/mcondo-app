@@ -8,35 +8,33 @@ service cloud.firestore {
     }
 
     function isAdmin(condominioId) {
-      // An admin is a user who is signed in AND exists in the admins collection 
-      // with the correct condominiumId.
-      return isSignedIn() && 
+      // An admin is a user who is signed in AND exists in the admins collection
+      // with the correct condominioId.
+      return isSignedIn() &&
              exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.condominioId == condominioId;
     }
 
     // --- Rules for Top-Level Collections ---
 
-    // Healthcheck collection
-    match /_healthcheck/{docId} {
-      allow read: if true;
+    // Condominios collection
+    match /condominios/{condominioId} {
+      // Any signed-in user can read the list of condominiums.
+      allow list: if isSignedIn();
+      // Only an admin for that specific condo can read details or modify it.
+      allow get, write: if isAdmin(condominioId);
+
+        // For any sub-collection within a condominium...
+        // only an admin can read or write data.
+        match /{subcollection}/{documentId} {
+            allow read, write: if isAdmin(condominioId);
+        }
     }
 
-    // Condominiums collection
-    match /condominiums/{condominiumId} {
-      allow get: if true;
-      allow list: if true;
-      allow write: if isSignedIn();
-
-      // --- Rules for Sub-Collections ---
-      match /{subcollection}/{documentId} {
-        allow read, write: if isSignedIn();
-      }
-    }
-
-    // Movimientos collection
+    // Movimientos collection (top-level)
     match /movimientos/{movimientoId} {
-      allow read, write: if isSignedIn();
+        // Access is granted if the user is an admin for the tenant_id specified in the document.
+        allow read, write: if isAdmin(resource.data.tenant_id);
     }
 
     // Admins collection

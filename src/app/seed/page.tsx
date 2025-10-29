@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-// Correcting the import from FirebaseClientProvider to FirebaseProvider
-import { FirebaseProvider, useFirestore } from '@/firebase';
+// Correcting the import from FirebaseClientProvider to FirebaseProvider and useFirestore to useFirebase
+import { FirebaseProvider, useFirebase } from '@/firebase';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { initialCondos } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
 function SeedComponent() {
-  const firestore = useFirestore();
+  const { firestore, isFirebaseLoading } = useFirebase();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +20,12 @@ function SeedComponent() {
     setIsLoading(true);
     setIsSuccess(false);
     setError(null);
+
+    if (!firestore) {
+      setError("Firestore is not available. Please try again later.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const batch = writeBatch(firestore);
@@ -70,6 +76,14 @@ function SeedComponent() {
     }
   };
 
+  if (isFirebaseLoading) {
+    return (
+        <div className="flex h-full items-center justify-center">
+            <p>Loading Firebase...</p>
+        </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Herramienta de Siembra de Datos" description="Usa este botón para poblar la base de datos con datos de prueba." />
@@ -79,7 +93,7 @@ function SeedComponent() {
                 <p className="mb-4">
                     Haz clic en el botón de abajo para crear los condominios "Residencial Armonía" y "Torre del Sol" en tu base de datos de Firestore. Esto te permitirá navegar y probar la aplicación.
                 </p>
-                <Button onClick={handleSeedDatabase} disabled={isLoading}>
+                <Button onClick={handleSeedDatabase} disabled={isLoading || isFirebaseLoading}>
                     {isLoading ? 'Creando datos...' : 'Crear Condominios de Prueba'}
                 </Button>
 
