@@ -21,9 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            // --- Elementos Comunes ---
-            const mainContent = document.querySelector('.main-content');
-
             // --- Lógica de Ingresos ---
             const addIncomeModal = document.getElementById('add-income-modal');
             const addIncomeButton = document.getElementById('add-income-button');
@@ -31,24 +28,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const incomeTableBody = document.querySelector('#income-table tbody');
             const incomeUnitSelect = document.getElementById('income-unit');
 
-            const loadUnits = () => {
-                firestore.collection('unidades').orderBy('numero').get().then(snapshot => {
+            const loadUnits = async () => {
+                try {
+                    const unitsSnapshot = await firestore.collection('unidades').orderBy('numero').get();
                     incomeUnitSelect.innerHTML = '<option value="">Seleccione una unidad...</option>';
-                    snapshot.forEach(doc => {
-                        const unit = doc.data();
+                    
+                    for (const unitDoc of unitsSnapshot.docs) {
+                        const unit = unitDoc.data();
+                        let contactName = 'N/A';
+
+                        if (unit.contactoId) {
+                            try {
+                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                if (contactDoc.exists) {
+                                    contactName = contactDoc.data().nombre;
+                                }
+                            } catch (error) {
+                                console.error("Error al buscar el nombre del contacto: ", error);
+                            }
+                        }
+                        
                         const option = document.createElement('option');
-                        option.value = doc.id;
-                        option.textContent = `${unit.numero} - ${unit.propietario}`;
+                        option.value = unitDoc.id;
+                        option.textContent = `${unit.numero} - ${contactName}`;
                         incomeUnitSelect.appendChild(option);
-                    });
-                }).catch(error => console.error("Error al cargar unidades: ", error));
+                    }
+                } catch (error) {
+                     console.error("Error al cargar unidades: ", error)
+                }
             };
 
             const openIncomeModal = () => {
                 addIncomeForm.reset();
                 document.getElementById('income-date').valueAsDate = new Date();
                 loadUnits();
-                addIncomeModal.style.display = 'block';
+                addIncomeModal.style.display = 'flex';
             };
 
             const closeIncomeModal = () => addIncomeModal.style.display = 'none';
@@ -78,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
             addIncomeModal.querySelectorAll('.close-button, .close-button-form').forEach(btn => btn.addEventListener('click', closeIncomeModal));
             addIncomeForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                
+                if (!incomeUnitSelect.value) {
+                    alert('Por favor, seleccione una unidad.');
+                    return;
+                }
+
                 const selectedOption = incomeUnitSelect.options[incomeUnitSelect.selectedIndex];
                 const incomePayload = {
                     fecha: document.getElementById('income-date').value,
@@ -92,7 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 firestore.collection('ingresos').add(incomePayload).then(() => {
                     closeIncomeModal();
                     fetchIncomes();
-                }).catch(error => console.error("Error al registrar el ingreso: ", error));
+                }).catch(error => {
+                    console.error("Error al registrar el ingreso: ", error);
+                    alert("Error al registrar el ingreso: " + error.message);
+                });
             });
 
             // --- Lógica de Egresos ---
@@ -104,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const openExpenseModal = () => {
                 addExpenseForm.reset();
                 document.getElementById('expense-date').valueAsDate = new Date();
-                addExpenseModal.style.display = 'block';
+                addExpenseModal.style.display = 'flex';
             };
 
             const closeExpenseModal = () => addExpenseModal.style.display = 'none';
@@ -146,7 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 firestore.collection('egresos').add(expensePayload).then(() => {
                     closeExpenseModal();
                     fetchExpenses();
-                }).catch(error => console.error("Error al registrar el egreso: ", error));
+                }).catch(error => {
+                    console.error("Error al registrar el egreso: ", error);
+                    alert("Error al registrar el egreso: " + error.message);
+                });
             });
 
             // --- Lógica para cerrar modales al hacer clic afuera ---

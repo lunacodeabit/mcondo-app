@@ -12,20 +12,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalTitle = addUnitModal.querySelector('h2');
             const addUnitForm = document.getElementById('add-unit-form');
             const unitsTableBody = document.querySelector('#units-table tbody');
-            
-            // FIX: Correctly select ALL close buttons, including the one in the form actions.
+            const contactInput = document.getElementById('unit-contact-input');
             const closeButtons = document.querySelectorAll('.close-button, .close-button-form');
 
             let editingUnitId = null;
+            let contactsCache = [];
+
+            const loadContacts = async () => {
+                try {
+                    const snapshot = await firestore.collection('contactos').orderBy('nombre').get();
+                    contactsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (error) {
+                    console.error("Error al cargar contactos en cache: ", error);
+                }
+            };
 
             const fetchUnits = () => {
-                firestore.collection('unidades').orderBy("numero").get().then(querySnapshot => {
+                 firestore.collection('unidades').orderBy("numero").get().then(async (querySnapshot) => {
                     unitsTableBody.innerHTML = '';
-                    querySnapshot.forEach(doc => {
+                    for (const doc of querySnapshot.docs) {
                         const unit = doc.data();
+                        let contactName = 'N/A';
+
+                        if (unit.contactoId) {
+                            try {
+                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                if (contactDoc.exists) {
+                                    contactName = contactDoc.data().nombre;
+                                }
+                            } catch (error) {
+                                console.error("Error al buscar el nombre del contacto: ", error);
+                            }
+                        }
+
                         const row = `<tr data-id="${doc.id}">
                             <td>${unit.numero || ''}</td>
-                            <td>${unit.propietario || ''}</td>
+                            <td>${contactName}</td>
                             <td>${unit.telefono || '--'}</td>
                             <td><span class="status-badge status-${(unit.estado || '').toLowerCase().replace(/\s/g, '-')}">${unit.estado}</span></td>
                             <td class="actions">
@@ -34,23 +56,44 @@ document.addEventListener('DOMContentLoaded', () => {
                             </td>
                         </tr>`;
                         unitsTableBody.innerHTML += row;
-                    });
+                    }
                     lucide.createIcons();
                 }).catch(error => console.error("Error al cargar las unidades: ", error));
+            };
+            
+            const openModal = () => {
+                addUnitModal.style.display = 'flex';
+            }
+
+            const openModalForCreate = () => {
+                 editingUnitId = null;
+                 addUnitForm.reset();
+                 contactInput.value = '';
+                 modalTitle.textContent = "Añadir Nueva Unidad";
+                 openModal();
             };
 
             const openModalForEdit = (id) => {
                 editingUnitId = id;
-                firestore.collection('unidades').doc(id).get().then(doc => {
+                firestore.collection('unidades').doc(id).get().then(async (doc) => {
                     if (doc.exists) {
                         const unit = doc.data();
                         const distribucion = unit.distribucion || {};
                         modalTitle.textContent = "Editar Unidad";
+
+                        contactInput.value = ''; // Clear previous value
+                        if (unit.contactoId) {
+                            try {
+                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                if(contactDoc.exists) {
+                                    contactInput.value = contactDoc.data().nombre;
+                                }
+                            } catch (e) { console.error(e); }
+                        }
                         
                         document.getElementById('unit-number').value = unit.numero || '';
                         document.getElementById('unit-type').value = unit.tipo || 'Apartamento';
                         document.getElementById('unit-ncf').value = unit.requiereNCF || 'No';
-                        document.getElementById('unit-owner').value = unit.propietario || '';
                         document.getElementById('unit-phone').value = unit.telefono || '';
                         document.getElementById('unit-whatsapp').value = unit.whatsapp || '';
                         document.getElementById('unit-email1').value = unit.email1 || '';
@@ -74,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('unit-legal').value = unit.aptoEnLegal || 'No';
                         document.getElementById('unit-status').value = unit.estado || 'Activo';
 
-                        addUnitModal.style.display = 'block';
+                        openModal();
                     }
                 }).catch(error => console.error("Error al obtener la unidad para editar: ", error));
             };
@@ -97,17 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const closeModal = () => {
                 addUnitModal.style.display = 'none';
-                addUnitForm.reset();
-                editingUnitId = null;
-                modalTitle.textContent = "Añadir Nueva Unidad";
             };
 
-            addUnitButton.addEventListener('click', () => {
-                 editingUnitId = null;
-                 addUnitForm.reset();
-                 modalTitle.textContent = "Añadir Nueva Unidad";
-                 addUnitModal.style.display = 'block';
-            });
+            addUnitButton.addEventListener('click', openModalForCreate);
 
             closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
             
@@ -117,13 +152,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            addUnitForm.addEventListener('submit', (event) => {
+            addUnitForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
+                const contactName = contactInput.value.trim();
+                let contactId = null;
+
+                if (!contactName) {
+                    alert('Por favor, introduzca un nombre de contacto.');
+                    return;
+                }
+
+                try {
+                    await loadContacts(); 
+                    const existingContact = contactsCache.find(c => c.nombre.toLowerCase() === contactName.toLowerCase());
+
+                    if (existingContact) {
+                        contactId = existingContact.id;
+                    } else {
+                        const newContactRef = await firestore.collection('contactos').add({ 
+                            nombre: contactName,
+                            tipo: 'Propietario', 
+                            telefono: document.getElementById('unit-phone').value, 
+                            email: document.getElementById('unit-email1').value    
+                        });
+                        contactId = newContactRef.id;
+                    }
+                } catch (error) {
+                     console.error("Error al gestionar el contacto: ", error);
+                     alert("No se pudo guardar el contacto. Revisa la consola.");
+                     return; 
+                }
+
                 const unitPayload = {
                     numero: document.getElementById('unit-number').value,
                     tipo: document.getElementById('unit-type').value,
                     requiereNCF: document.getElementById('unit-ncf').value,
-                    propietario: document.getElementById('unit-owner').value,
+                    contactoId: contactId, 
                     telefono: document.getElementById('unit-phone').value,
                     whatsapp: document.getElementById('unit-whatsapp').value,
                     email1: document.getElementById('unit-email1').value,
@@ -157,13 +221,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 promise.then(() => {
                     closeModal();
                     fetchUnits();
+                    loadContacts();
                 }).catch(error => {
                     console.error("Error al guardar la unidad: ", error);
-                    alert("Error al guardar la unidad. Revisa la consola para más detalles.");
+                    alert("Error al guardar la unidad. Revisa la consola.");
                 });
             });
 
+            // Initial loads
             fetchUnits();
+            loadContacts();
 
         } else {
             console.log("Usuario no autenticado en la página de unidades.");
