@@ -37,12 +37,12 @@ async function loadDashboard(user) {
     const totalIngresosElem = document.getElementById('total-ingresos');
     const totalEgresosElem = document.getElementById('total-egresos');
     const balanceGeneralElem = document.getElementById('balance-general');
-    const totalCondominiosElem = document.getElementById('total-condominios');
+    const totalUnidadesElem = document.getElementById('total-unidades');
 
     try {
         const ingresosSnapshot = await db.collection('ingresos').get();
         const egresosSnapshot = await db.collection('egresos').get();
-        const condominiosSnapshot = await db.collection('condominios').get();
+        const unidadesSnapshot = await db.collection('unidades').get();
 
         let totalIngresos = 0;
         ingresosSnapshot.forEach(doc => {
@@ -55,7 +55,7 @@ async function loadDashboard(user) {
         });
 
         const balanceGeneral = totalIngresos - totalEgresos;
-        const totalCondominios = condominiosSnapshot.size;
+        const totalUnidades = unidadesSnapshot.size;
 
         // Formatear como moneda
         const formatCurrency = (amount) => amount.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' });
@@ -63,7 +63,7 @@ async function loadDashboard(user) {
         totalIngresosElem.textContent = formatCurrency(totalIngresos);
         totalEgresosElem.textContent = formatCurrency(totalEgresos);
         balanceGeneralElem.textContent = formatCurrency(balanceGeneral);
-        totalCondominiosElem.textContent = totalCondominios;
+        totalUnidadesElem.textContent = totalUnidades;
 
     } catch (error) {
         console.error("Error al calcular KPIs: ", error);
@@ -119,6 +119,6 @@ async function loadDashboard(user) {
 
     } catch (error) {
         console.error("Error al cargar actividad reciente: ", error);
-        recentActivityList.innerHTML = '<li>Error al cargar la actividad.</li>
+        recentActivityList.innerHTML = '<li>Error al cargar la actividad.</li>';
     }
 }

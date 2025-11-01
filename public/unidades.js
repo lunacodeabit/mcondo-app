@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    if (!window.location.pathname.includes('condominios.html')) {
+    if (!window.location.pathname.includes('unidades.html')) {
         return;
     }
 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const fetchCollection = () => {
-                 firestore.collection('condominios').orderBy("numero").get().then(async (querySnapshot) => {
+                 firestore.collection('unidades').orderBy("numero").get().then(async (querySnapshot) => {
                     tableBody.innerHTML = '';
                     for (const doc of querySnapshot.docs) {
                         const item = doc.data();
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         tableBody.innerHTML += row;
                     }
                     lucide.createIcons();
-                }).catch(error => console.error("Error al cargar los condominios: ", error));
+                }).catch(error => console.error("Error al cargar las unidades: ", error));
             };
             
             const openModal = () => {
@@ -69,17 +69,17 @@ document.addEventListener('DOMContentLoaded', () => {
                  editingId = null;
                  form.reset();
                  contactInput.value = '';
-                 modalTitle.textContent = "Añadir Nuevo Condominio";
+                 modalTitle.textContent = "Añadir Nueva Unidad";
                  openModal();
             };
 
             const openModalForEdit = (id) => {
                 editingId = id;
-                firestore.collection('condominios').doc(id).get().then(async (doc) => {
+                firestore.collection('unidades').doc(id).get().then(async (doc) => {
                     if (doc.exists) {
                         const item = doc.data();
                         const distribucion = item.distribucion || {};
-                        modalTitle.textContent = "Editar Condominio";
+                        modalTitle.textContent = "Editar Unidad";
 
                         contactInput.value = ''; 
                         if (item.contactoId) {
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         openModal();
                     }
-                }).catch(error => console.error("Error al obtener el condominio para editar: ", error));
+                }).catch(error => console.error("Error al obtener la unidad para editar: ", error));
             };
 
             tableBody.addEventListener('click', (e) => {
@@ -130,8 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.closest('.edit-button')) {
                     openModalForEdit(id);
                 } else if (e.target.closest('.delete-button')) {
-                    if (confirm('¿Estás seguro de que quieres eliminar este condominio?')) {
-                        firestore.collection('condominios').doc(id).delete()
+                    if (confirm('¿Estás seguro de que quieres eliminar esta unidad?')) {
+                        firestore.collection('unidades').doc(id).delete()
                             .then(() => fetchCollection())
                             .catch(error => console.error("Error al eliminar el documento: ", error));
                     }
@@ -215,16 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 const promise = editingId
-                    ? firestore.collection('condominios').doc(editingId).update(payload)
-                    : firestore.collection('condominios').add(payload);
+                    ? firestore.collection('unidades').doc(editingId).update(payload)
+                    : firestore.collection('unidades').add(payload);
 
                 promise.then(() => {
                     closeModal();
                     fetchCollection();
                     loadContacts();
                 }).catch(error => {
-                    console.error("Error al guardar el condominio: ", error);
-                    alert("Error al guardar el condominio. Revisa la consola.");
+                    console.error("Error al guardar la unidad: ", error);
+                    alert("Error al guardar la unidad. Revisa la consola.");
                 });
             });
 
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadContacts();
 
         } else {
-            console.log("Usuario no autenticado en la página de condominios.");
+            console.log("Usuario no autenticado en la página de unidades.");
         }
     });
 });
