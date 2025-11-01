@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contactos - CondoAdmin</title>
+  <title>Residentes - CondoAdmin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -17,8 +17,8 @@
     <nav>
       <ul>
         <li><a href="index.html"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
-        <li><a href="unidades.html"><i data-lucide="building-2"></i> Unidades</a></li>
-        <li><a href="contactos.html" class="active"><i data-lucide="users"></i> Contactos</a></li>
+        <li><a href="condominios.html"><i data-lucide="building-2"></i> Condominios</a></li>
+        <li><a href="residentes.html" class="active"><i data-lucide="users"></i> Residentes</a></li>
         <li><a href="finanzas.html"><i data-lucide="landmark"></i> Finanzas</a></li>
         <li><a href="#"><i data-lucide="megaphone"></i> Comunicados</a></li>
         <li><a href="#"><i data-lucide="alert-triangle"></i> Incidentes</a></li>
@@ -33,8 +33,8 @@
   <div class="main-content">
     <button class="hamburger-button"><i data-lucide="menu"></i></button>
     <header>
-      <h1 class="font-poppins">Gestión de Contactos</h1>
-      <button id="add-contact-button" class="btn btn-primary"><i data-lucide="plus"></i> Añadir Contacto</button>
+      <h1 class="font-poppins">Gestión de Residentes</h1>
+      <button id="add-contact-button" class="btn btn-primary"><i data-lucide="plus"></i> Añadir Residente</button>
     </header>
 
     <main>
@@ -60,7 +60,7 @@
   <div id="add-contact-modal" class="modal">
     <div class="modal-content">
       <span class="close-button">&times;</span>
-      <h2 class="font-poppins">Añadir Nuevo Contacto</h2>
+      <h2 class="font-poppins">Añadir Nuevo Residente</h2>
       <form id="add-contact-form">
         <div class="form-grid">
             <div class="form-group">
@@ -68,7 +68,7 @@
                 <input type="text" id="contact-name" required>
             </div>
             <div class="form-group">
-                <label for="contact-type">Tipo de Contacto</label>
+                <label for="contact-type">Tipo de Residente</label>
                 <select id="contact-type" required>
                     <option value="Propietario">Propietario</option>
                     <option value="Inquilino">Inquilino</option>
@@ -92,7 +92,7 @@
         </div>
         <div class="form-actions">
             <button type="button" class="btn btn-secondary close-button-form">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar Contacto</button>
+            <button type="submit" class="btn btn-primary">Guardar Residente</button>
         </div>
       </form>
     </div>
@@ -101,9 +101,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-  <script src="auth.js?v=3"></script>
-  <script src="app.js?v=3"></script>
-  <script src="contactos.js?v=3"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="app.js?v=5"></script>
+  <script src="residentes.js?v=5"></script>
   <script>
     lucide.createIcons();
   </script>

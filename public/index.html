@@ -8,7 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=5">
+  
+  <!-- Firebase y Autenticación se cargan primero -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script src="auth.js?v=5"></script>
 </head>
 <body>
 
@@ -17,8 +23,8 @@
     <nav>
       <ul>
         <li><a href="index.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
-        <li><a href="unidades.html"><i data-lucide="building-2"></i> Unidades</a></li>
-        <li><a href="contactos.html"><i data-lucide="users"></i> Contactos</a></li>
+        <li><a href="condominios.html"><i data-lucide="building-2"></i> Condominios</a></li>
+        <li><a href="residentes.html"><i data-lucide="users"></i> Residentes</a></li>
         <li><a href="finanzas.html"><i data-lucide="landmark"></i> Finanzas</a></li>
         <li><a href="#"><i data-lucide="megaphone"></i> Comunicados</a></li>
         <li><a href="#"><i data-lucide="alert-triangle"></i> Incidentes</a></li>
@@ -34,20 +40,68 @@
     <button class="hamburger-button"><i data-lucide="menu"></i></button>
     <header>
       <h1 class="font-poppins">Dashboard</h1>
-      <div style="color: var(--text-secondary);">¡Bienvenida, Ana!</div>
+      <div class="header-user">
+          <span id="welcome-message">¡Bienvenido!</span>
+          <div id="user-avatar" class="user-avatar"></div>
+      </div>
     </header>
 
     <main>
-      <!-- Contenido del dashboard aquí -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <h4>Total Ingresos</h4>
+          <p id="total-ingresos">$0</p>
+          <div class="kpi-icon" style="background-color: var(--success-light);"><i data-lucide="trending-up" style="color: var(--success);"></i></div>
+        </div>
+        <div class="kpi-card">
+          <h4>Total Egresos</h4>
+          <p id="total-egresos">$0</p>
+           <div class="kpi-icon" style="background-color: var(--danger-light);"><i data-lucide="trending-down" style="color: var(--danger);"></i></div>
+        </div>
+        <div class="kpi-card">
+          <h4>Balance General</h4>
+          <p id="balance-general">$0</p>
+           <div class="kpi-icon" style="background-color: var(--primary-light);"><i data-lucide="scale" style="color: var(--primary-color);"></i></div>
+        </div>
+        <div class="kpi-card">
+          <h4>Condominios Registrados</h4>
+          <p id="total-condominios">0</p>
+           <div class="kpi-icon" style="background-color: var(--warning-light);"><i data-lucide="building-2" style="color: var(--warning);"></i></div>
+        </div>
+      </div>
+
+      <div class="dashboard-columns">
+        <div class="actions-container">
+          <div class="card">
+            <div class="card-header">
+              <h3>Acciones Rápidas</h3>
+            </div>
+            <ul class="quick-actions">
+              <li><a href="finanzas.html"><i data-lucide="plus"></i> Registrar Ingreso/Egreso</a></li>
+              <li><a href="condominios.html"><i data-lucide="home"></i> Gestionar Condominios</a></li>
+              <li><a href="residentes.html"><i data-lucide="user-plus"></i> Agregar Residente</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="activity-container">
+          <div class="card">
+            <div class="card-header">
+              <h3>Actividad Reciente</h3>
+              <a href="finanzas.html" class="view-all">Ver todo</a>
+            </div>
+            <ul id="recent-activity-list" class="recent-activity">
+              <!-- La actividad reciente se cargará aquí dinámicamente -->
+              <li>No hay actividad reciente.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
   
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-  <script src="auth.js?v=3"></script>
-  <script src="app.js?v=3"></script>
-  <script src="dashboard.js?v=3"></script>
+  <!-- Scripts de la aplicación -->
+  <script src="app.js?v=5"></script>
+  <script src="dashboard.js?v=5"></script>
   <script>
     lucide.createIcons();
   </script>

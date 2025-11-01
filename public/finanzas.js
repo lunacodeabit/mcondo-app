@@ -5,9 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            console.log("Usuario autenticado en la página de finanzas.");
-            const firestore = firebase.firestore();
-
+            console.log("Usuario autenticado en la página de finanzas. Usando la instancia de DB correcta.");
+            
             // --- Lógica de Pestañas ---
             const tabs = document.querySelectorAll('.tab-link');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -30,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const loadUnits = async () => {
                 try {
-                    const unitsSnapshot = await firestore.collection('unidades').orderBy('numero').get();
+                    const unitsSnapshot = await db.collection('unidades').orderBy('numero').get();
                     incomeUnitSelect.innerHTML = '<option value="">Seleccione una unidad...</option>';
                     
                     for (const unitDoc of unitsSnapshot.docs) {
@@ -39,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (unit.contactoId) {
                             try {
-                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                const contactDoc = await db.collection('contactos').doc(unit.contactoId).get();
                                 if (contactDoc.exists) {
                                     contactName = contactDoc.data().nombre;
                                 }
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const closeIncomeModal = () => addIncomeModal.style.display = 'none';
 
             const fetchIncomes = () => {
-                firestore.collection('ingresos').orderBy('fecha', 'desc').get().then(snapshot => {
+                db.collection('ingresos').orderBy('fecha', 'desc').get().then(snapshot => {
                     incomeTableBody.innerHTML = '';
                     snapshot.forEach(doc => {
                         const income = doc.data();
@@ -109,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                firestore.collection('ingresos').add(incomePayload).then(() => {
+                db.collection('ingresos').add(incomePayload).then(() => {
                     closeIncomeModal();
                     fetchIncomes();
                 }).catch(error => {
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const closeExpenseModal = () => addExpenseModal.style.display = 'none';
 
             const fetchExpenses = () => {
-                firestore.collection('egresos').orderBy('fecha', 'desc').get().then(snapshot => {
+                db.collection('egresos').orderBy('fecha', 'desc').get().then(snapshot => {
                     expenseTableBody.innerHTML = '';
                     snapshot.forEach(doc => {
                         const expense = doc.data();
@@ -166,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                firestore.collection('egresos').add(expensePayload).then(() => {
+                db.collection('egresos').add(expensePayload).then(() => {
                     closeExpenseModal();
                     fetchExpenses();
                 }).catch(error => {

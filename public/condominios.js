@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    if (!window.location.pathname.includes('unidades.html')) {
+    if (!window.location.pathname.includes('condominios.html')) {
         return;
     }
 
@@ -7,158 +7,158 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             const firestore = firebase.firestore();
 
-            const addUnitButton = document.getElementById('add-unit-button');
-            const addUnitModal = document.getElementById('add-unit-modal');
-            const modalTitle = addUnitModal.querySelector('h2');
-            const addUnitForm = document.getElementById('add-unit-form');
-            const unitsTableBody = document.querySelector('#units-table tbody');
+            const addButton = document.getElementById('add-unit-button');
+            const modal = document.getElementById('add-unit-modal');
+            const modalTitle = modal.querySelector('h2');
+            const form = document.getElementById('add-unit-form');
+            const tableBody = document.querySelector('#units-table tbody');
             const contactInput = document.getElementById('unit-contact-input');
             const closeButtons = document.querySelectorAll('.close-button, .close-button-form');
 
-            let editingUnitId = null;
+            let editingId = null;
             let contactsCache = [];
 
             const loadContacts = async () => {
                 try {
-                    const snapshot = await firestore.collection('contactos').orderBy('nombre').get();
+                    const snapshot = await firestore.collection('residentes').orderBy('nombre').get();
                     contactsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 } catch (error) {
-                    console.error("Error al cargar contactos en cache: ", error);
+                    console.error("Error al cargar residentes en cache: ", error);
                 }
             };
 
-            const fetchUnits = () => {
-                 firestore.collection('unidades').orderBy("numero").get().then(async (querySnapshot) => {
-                    unitsTableBody.innerHTML = '';
+            const fetchCollection = () => {
+                 firestore.collection('condominios').orderBy("numero").get().then(async (querySnapshot) => {
+                    tableBody.innerHTML = '';
                     for (const doc of querySnapshot.docs) {
-                        const unit = doc.data();
+                        const item = doc.data();
                         let contactName = 'N/A';
 
-                        if (unit.contactoId) {
+                        if (item.contactoId) {
                             try {
-                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                const contactDoc = await firestore.collection('residentes').doc(item.contactoId).get();
                                 if (contactDoc.exists) {
                                     contactName = contactDoc.data().nombre;
                                 }
                             } catch (error) {
-                                console.error("Error al buscar el nombre del contacto: ", error);
+                                console.error("Error al buscar el nombre del residente: ", error);
                             }
                         }
 
                         const row = `<tr data-id="${doc.id}">
-                            <td>${unit.numero || ''}</td>
+                            <td>${item.numero || ''}</td>
                             <td>${contactName}</td>
-                            <td>${unit.telefono || '--'}</td>
-                            <td><span class="status-badge status-${(unit.estado || '').toLowerCase().replace(/\s/g, '-')}">${unit.estado}</span></td>
+                            <td>${item.telefono || '--'}</td>
+                            <td><span class="status-badge status-${(item.estado || '').toLowerCase().replace(/\s/g, '-')}">${item.estado}</span></td>
                             <td class="actions">
                                 <button class="btn-icon edit-button"><i data-lucide="edit-2"></i></button>
                                 <button class="btn-icon btn-danger delete-button"><i data-lucide="trash-2"></i></button>
                             </td>
                         </tr>`;
-                        unitsTableBody.innerHTML += row;
+                        tableBody.innerHTML += row;
                     }
                     lucide.createIcons();
-                }).catch(error => console.error("Error al cargar las unidades: ", error));
+                }).catch(error => console.error("Error al cargar los condominios: ", error));
             };
             
             const openModal = () => {
-                addUnitModal.style.display = 'flex';
+                modal.style.display = 'flex';
             }
 
             const openModalForCreate = () => {
-                 editingUnitId = null;
-                 addUnitForm.reset();
+                 editingId = null;
+                 form.reset();
                  contactInput.value = '';
-                 modalTitle.textContent = "Añadir Nueva Unidad";
+                 modalTitle.textContent = "Añadir Nuevo Condominio";
                  openModal();
             };
 
             const openModalForEdit = (id) => {
-                editingUnitId = id;
-                firestore.collection('unidades').doc(id).get().then(async (doc) => {
+                editingId = id;
+                firestore.collection('condominios').doc(id).get().then(async (doc) => {
                     if (doc.exists) {
-                        const unit = doc.data();
-                        const distribucion = unit.distribucion || {};
-                        modalTitle.textContent = "Editar Unidad";
+                        const item = doc.data();
+                        const distribucion = item.distribucion || {};
+                        modalTitle.textContent = "Editar Condominio";
 
-                        contactInput.value = ''; // Clear previous value
-                        if (unit.contactoId) {
+                        contactInput.value = ''; 
+                        if (item.contactoId) {
                             try {
-                                const contactDoc = await firestore.collection('contactos').doc(unit.contactoId).get();
+                                const contactDoc = await firestore.collection('residentes').doc(item.contactoId).get();
                                 if(contactDoc.exists) {
                                     contactInput.value = contactDoc.data().nombre;
                                 }
                             } catch (e) { console.error(e); }
                         }
                         
-                        document.getElementById('unit-number').value = unit.numero || '';
-                        document.getElementById('unit-type').value = unit.tipo || 'Apartamento';
-                        document.getElementById('unit-ncf').value = unit.requiereNCF || 'No';
-                        document.getElementById('unit-phone').value = unit.telefono || '';
-                        document.getElementById('unit-whatsapp').value = unit.whatsapp || '';
-                        document.getElementById('unit-email1').value = unit.email1 || '';
-                        document.getElementById('unit-email2').value = unit.email2 || '';
-                        document.getElementById('unit-comment').value = unit.comentario || '';
-                        document.getElementById('unit-habited').value = unit.habitado || 'Si';
-                        document.getElementById('unit-airbnb').value = unit.airbnb || 'No';
-                        document.getElementById('unit-rented').value = unit.alquilado || 'No';
-                        document.getElementById('unit-represented').value = unit.representado || 'No';
-                        document.getElementById('unit-fee').value = unit.cuotaMensual || 0;
-                        document.getElementById('unit-fee-notification').value = unit.notifCuotasEmail || 'Si';
-                        document.getElementById('unit-doc-name').value = unit.verNombreEnDocs || 'Si';
+                        document.getElementById('unit-number').value = item.numero || '';
+                        document.getElementById('unit-type').value = item.tipo || 'Apartamento';
+                        document.getElementById('unit-ncf').value = item.requiereNCF || 'No';
+                        document.getElementById('unit-phone').value = item.telefono || '';
+                        document.getElementById('unit-whatsapp').value = item.whatsapp || '';
+                        document.getElementById('unit-email1').value = item.email1 || '';
+                        document.getElementById('unit-email2').value = item.email2 || '';
+                        document.getElementById('unit-comment').value = item.comentario || '';
+                        document.getElementById('unit-habited').value = item.habitado || 'Si';
+                        document.getElementById('unit-airbnb').value = item.airbnb || 'No';
+                        document.getElementById('unit-rented').value = item.alquilado || 'No';
+                        document.getElementById('unit-represented').value = item.representado || 'No';
+                        document.getElementById('unit-fee').value = item.cuotaMensual || 0;
+                        document.getElementById('unit-fee-notification').value = item.notifCuotasEmail || 'Si';
+                        document.getElementById('unit-doc-name').value = item.verNombreEnDocs || 'Si';
                         document.getElementById('dist-maintenance').value = distribucion.mantenimiento || 'Propietario';
                         document.getElementById('dist-gas').value = distribucion.gas || 'Propietario';
                         document.getElementById('dist-charges').value = distribucion.cargos || 'Propietario';
                         document.getElementById('dist-arrears').value = distribucion.moras || 'Propietario';
                         document.getElementById('dist-cxc').value = distribucion.cxc || 'Propietario';
-                        document.getElementById('unit-board-member').value = unit.miembroJunta || 'No';
-                        document.getElementById('unit-board-name').value = unit.nombreMiembroJA || '';
-                        document.getElementById('unit-payment-agreement').value = unit.acuerdoPago || 'No';
-                        document.getElementById('unit-legal').value = unit.aptoEnLegal || 'No';
-                        document.getElementById('unit-status').value = unit.estado || 'Activo';
+                        document.getElementById('unit-board-member').value = item.miembroJunta || 'No';
+                        document.getElementById('unit-board-name').value = item.nombreMiembroJA || '';
+                        document.getElementById('unit-payment-agreement').value = item.acuerdoPago || 'No';
+                        document.getElementById('unit-legal').value = item.aptoEnLegal || 'No';
+                        document.getElementById('unit-status').value = item.estado || 'Activo';
 
                         openModal();
                     }
-                }).catch(error => console.error("Error al obtener la unidad para editar: ", error));
+                }).catch(error => console.error("Error al obtener el condominio para editar: ", error));
             };
 
-            unitsTableBody.addEventListener('click', (e) => {
+            tableBody.addEventListener('click', (e) => {
                 const row = e.target.closest('tr');
                 if (!row) return;
-                const unitId = row.dataset.id;
+                const id = row.dataset.id;
 
                 if (e.target.closest('.edit-button')) {
-                    openModalForEdit(unitId);
+                    openModalForEdit(id);
                 } else if (e.target.closest('.delete-button')) {
-                    if (confirm('¿Estás seguro de que quieres eliminar esta unidad?')) {
-                        firestore.collection('unidades').doc(unitId).delete()
-                            .then(() => fetchUnits())
+                    if (confirm('¿Estás seguro de que quieres eliminar este condominio?')) {
+                        firestore.collection('condominios').doc(id).delete()
+                            .then(() => fetchCollection())
                             .catch(error => console.error("Error al eliminar el documento: ", error));
                     }
                 }
             });
 
             const closeModal = () => {
-                addUnitModal.style.display = 'none';
+                modal.style.display = 'none';
             };
 
-            addUnitButton.addEventListener('click', openModalForCreate);
+            addButton.addEventListener('click', openModalForCreate);
 
             closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
             
             window.addEventListener('click', (event) => {
-                if (event.target == addUnitModal) {
+                if (event.target == modal) {
                     closeModal();
                 }
             });
 
-            addUnitForm.addEventListener('submit', async (event) => {
+            form.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const contactName = contactInput.value.trim();
                 let contactId = null;
 
                 if (!contactName) {
-                    alert('Por favor, introduzca un nombre de contacto.');
+                    alert('Por favor, introduzca un nombre de residente.');
                     return;
                 }
 
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (existingContact) {
                         contactId = existingContact.id;
                     } else {
-                        const newContactRef = await firestore.collection('contactos').add({ 
+                        const newContactRef = await firestore.collection('residentes').add({ 
                             nombre: contactName,
                             tipo: 'Propietario', 
                             telefono: document.getElementById('unit-phone').value, 
@@ -178,12 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         contactId = newContactRef.id;
                     }
                 } catch (error) {
-                     console.error("Error al gestionar el contacto: ", error);
-                     alert("No se pudo guardar el contacto. Revisa la consola.");
+                     console.error("Error al gestionar el residente: ", error);
+                     alert("No se pudo guardar el residente. Revisa la consola.");
                      return; 
                 }
 
-                const unitPayload = {
+                const payload = {
                     numero: document.getElementById('unit-number').value,
                     tipo: document.getElementById('unit-type').value,
                     requiereNCF: document.getElementById('unit-ncf').value,
@@ -214,26 +214,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     estado: document.getElementById('unit-status').value
                 };
 
-                const promise = editingUnitId
-                    ? firestore.collection('unidades').doc(editingUnitId).update(unitPayload)
-                    : firestore.collection('unidades').add(unitPayload);
+                const promise = editingId
+                    ? firestore.collection('condominios').doc(editingId).update(payload)
+                    : firestore.collection('condominios').add(payload);
 
                 promise.then(() => {
                     closeModal();
-                    fetchUnits();
+                    fetchCollection();
                     loadContacts();
                 }).catch(error => {
-                    console.error("Error al guardar la unidad: ", error);
-                    alert("Error al guardar la unidad. Revisa la consola.");
+                    console.error("Error al guardar el condominio: ", error);
+                    alert("Error al guardar el condominio. Revisa la consola.");
                 });
             });
 
             // Initial loads
-            fetchUnits();
+            fetchCollection();
             loadContacts();
 
         } else {
-            console.log("Usuario no autenticado en la página de unidades.");
+            console.log("Usuario no autenticado en la página de condominios.");
         }
     });
 });

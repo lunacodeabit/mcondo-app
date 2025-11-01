@@ -1,10 +1,10 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyD-LjKp8-Qdj0ube1vfa6ju1MJ2SosOCu4",
-    authDomain: "studio-2882775050-18569.firebaseapp.com",
-    projectId: "studio-2882775050-18569",
-    storageBucket: "studio-2882775050-18569.firebasestorage.app",
-    messagingSenderId: "301300120429",
-    appId: "1:301300120429:web:56f59894b97863e143f864"
+  apiKey: "AIzaSyCQEWcZMNICvitrg1wxEEu3Rko6_McDbtk",
+  authDomain: "mcondo-app-42247438-22be9.firebaseapp.com",
+  projectId: "mcondo-app-42247438-22be9",
+  storageBucket: "mcondo-app-42247438-22be9.firebasestorage.app",
+  messagingSenderId: "1026534525301",
+  appId: "1:1026534525301:web:334fbfc327b57b7a32eb3c"
 };
 
 // Inicializar Firebase de forma segura para evitar conflictos
@@ -12,6 +12,8 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
+const db = firebase.firestore();
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginGoogleBtn = document.getElementById('login-google-btn');
@@ -36,11 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Usuario está logueado
             if (isLoginPage) {
                 window.location.href = 'index.html';
-            } else {
-                setupLogout();
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
             }
         } else {
             // Usuario no está logueado
@@ -50,20 +47,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-function setupLogout() {
-    const sidebarNav = document.querySelector('.sidebar nav ul');
-    if (sidebarNav && !document.getElementById('logout-btn')) { // Evitar duplicados
-        const logoutLi = document.createElement('li');
-        logoutLi.innerHTML = `<a href="#" id="logout-btn"><i data-lucide="log-out"></i> Cerrar Sesión</a>`;
-        sidebarNav.appendChild(logoutLi);
-
-        const logoutButton = document.getElementById('logout-btn');
-        logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            auth.signOut().then(() => {
-                window.location.href = 'login.html';
-            });
-        });
-    }
-}
