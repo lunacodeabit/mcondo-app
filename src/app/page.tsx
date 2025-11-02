@@ -1,29 +1,42 @@
 "use client";
-
 import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import AppLayout from './layout';
 import Link from 'next/link';
 
+// Definir el tipo para un cliente
+interface Client {
+  id: string;
+  nombre: string;
+  direccion?: string;
+  unitCount: number;
+  // Añade aquí otros campos que esperas de un cliente
+}
+
 export default function AdminPanel() {
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
     async function fetchClients() {
-      const clientsSnapshot = await getDocs(collection(db, 'clientes'));
-      const clientsData = await Promise.all(
-        clientsSnapshot.docs.map(async (clientDoc) => {
-          const unitsQuery = query(collection(db, 'unidades'), where('clienteId', '==', clientDoc.id));
-          const unitsSnapshot = await getDocs(unitsQuery);
-          return {
-            id: clientDoc.id,
-            ...clientDoc.data(),
-            unitCount: unitsSnapshot.size,
-          };
-        })
-      );
-      setClients(clientsData);
+      try {
+        const clientsSnapshot = await getDocs(collection(db, 'clientes'));
+        const clientsData = await Promise.all(
+          clientsSnapshot.docs.map(async (clientDoc) => {
+            const unitsQuery = query(collection(db, 'unidades'), where('clienteId', '==', clientDoc.id));
+            const unitsSnapshot = await getDocs(unitsQuery);
+            return {
+              id: clientDoc.id,
+              nombre: clientDoc.data().nombre,
+              direccion: clientDoc.data().direccion,
+              unitCount: unitsSnapshot.size,
+            };
+          })
+        );
+        setClients(clientsData);
+      } catch (error) {
+        console.error("Error fetching clients: ", error);
+      }
     }
     fetchClients();
   }, []);
