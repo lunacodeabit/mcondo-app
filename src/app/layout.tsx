@@ -1,7 +1,6 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Logo } from '@/components/logo';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-gray-900 text-white">
       <aside className="w-64 bg-gray-800 p-4">
         <div className="flex items-center gap-2 mb-8">
-          <Logo />
+          
           <span className="text-lg font-semibold">CondoAdmin</span>
         </div>
         <nav>
