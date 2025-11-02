@@ -1,134 +1,47 @@
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useState } from 'react';
+import { db } from '../lib/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import AppLayout from './layout';
+import Link from 'next/link';
 
-import { db } from "../lib/firebase";
-import { collection, getCountFromServer } from "firebase/firestore";
+export default function AdminPanel() {
+  const [clients, setClients] = useState([]);
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Logo } from "@/components/logo";
-
-export default function Home() {
-  // 🔎 Probar conexión a Firestore al cargar la página
   useEffect(() => {
-    (async () => {
-      try {
-        const coll = collection(db, "_healthcheck"); // colección dummy
-        await getCountFromServer(coll);
-        console.log("✅ Firestore conectado correctamente");
-      } catch (err) {
-        console.error("❌ Error conectando con Firestore:", err);
-      }
-    })();
+    async function fetchClients() {
+      const clientsSnapshot = await getDocs(collection(db, 'clientes'));
+      const clientsData = await Promise.all(
+        clientsSnapshot.docs.map(async (clientDoc) => {
+          const unitsQuery = query(collection(db, 'unidades'), where('clienteId', '==', clientDoc.id));
+          const unitsSnapshot = await getDocs(unitsQuery);
+          return {
+            id: clientDoc.id,
+            ...clientDoc.data(),
+            unitCount: unitsSnapshot.size,
+          };
+        })
+      );
+      setClients(clientsData);
+    }
+    fetchClients();
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* HEADER */}
-      <header className="bg-gray-100 dark:bg-gray-800 px-4 py-2 md:px-6 md:py-3">
-        <div className="container mx-auto flex items-center justify-between">
-          <Link href="#" className="flex items-center gap-2" prefetch={false}>
-            <Logo />
-            <span className="text-lg font-semibold text-gray-900 dark:text-white">
-              CondoMAX
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-4">
-            <Button asChild>
-              <Link href="/condo">Login</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* HERO / LANDING */}
-      <main className="flex-1 py-12 md:py-24">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Texto lado izquierdo */}
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-                Modernize Your Condo Management
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                CondoMAX is a comprehensive platform to streamline your condominium's operations.
-                From finances and maintenance to resident communication, we've got you covered.
-              </p>
-
-              <div className="flex gap-4">
-                <Button asChild>
-                  <Link href="/condo">Get Started</Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Tarjetas lado derecho */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Financials</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Track expenses, manage budgets, and generate financial reports with ease.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Incidents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Report and track maintenance issues, ensuring timely resolution.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Communications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Keep residents informed with announcements, newsletters, and a community forum.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Statement</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Provide residents with access to their account statements and online payment options.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* FOOTER */}
-      <footer className="bg-gray-100 dark:bg-gray-800 px-4 py-6 md:px-6">
-        <div className="container mx-auto flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <p>&copy; 2024 CondoMAX. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="#" className="hover:underline" prefetch={false}>
-              Terms of Service
-            </Link>
-            <Link href="#" className="hover:underline" prefetch={false}>
-              Privacy Policy
+    <AppLayout>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {clients.map((client) => (
+          <div key={client.id} className="bg-gray-800 rounded-lg p-6 flex flex-col">
+            <h3 className="text-xl font-bold mb-2">{client.nombre}</h3>
+            <p className="text-gray-400 mb-4">{client.direccion || 'Sin dirección'}</p>
+            <p className="text-gray-500 mb-4">{client.unitCount} unidades</p>
+            <Link href={`/dashboard?clienteId=${client.id}`} className="mt-auto bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700">
+              Administrar
             </Link>
           </div>
-        </div>
-      </footer>
-    </div>
+        ))}
+      </div>
+    </AppLayout>
   );
 }
