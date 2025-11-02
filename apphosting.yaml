@@ -1,5 +1,5 @@
 run:
   build:
     - npm i
-    - npm run dev
+    - npm run build
   start: npm start
