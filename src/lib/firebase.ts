@@ -1,17 +1,11 @@
-// src/lib/firebase.ts
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig } from './firebaseConfig';
 
-// 🔹 Importa la configuración correcta desde el otro archivo
-import { firebaseConfig } from '../firebase/config';
-
-// 🔹 Inicializa la app principal con la configuración importada
-const app = initializeApp(firebaseConfig);
-
-// 🔹 Crea las instancias de autenticación y base de datos
-const auth = getAuth(app);
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// ✅ Exporta las instancias para poder usarlas en otros archivos
-export { app, auth, db };
+export { app, db, auth };
