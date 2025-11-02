@@ -6,7 +6,7 @@ var app_1 = require("firebase/app");
 var auth_1 = require("firebase/auth");
 var firestore_1 = require("firebase/firestore");
 // 🔹 Importa la configuración correcta desde el otro archivo
-var config_1 = require("../firebase/config");
+var config_1 = require("../../firebase/config");
 // 🔹 Inicializa la app principal con la configuración importada
 var app = (0, app_1.initializeApp)(config_1.firebaseConfig);
 exports.app = app;
