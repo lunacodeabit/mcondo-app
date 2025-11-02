@@ -1,45 +1,43 @@
-import type { Metadata } from "next";
-import { Poppins, PT_Sans } from "next/font/google";
-import { Toaster } from "@/components/ui/toaster";
-import "./globals.css";
-import { cn } from "@/lib/utils";
+"use client";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Logo } from '@/components/logo';
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-headline",
-  weight: ["400", "600", "700"],
-});
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
 
-const ptSans = PT_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-body",
-  weight: ["400", "700"],
-});
-
-export const metadata: Metadata = {
-  title: "MICONDO APP",
-  description: "Gestión de condominios de clase mundial",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body
-        className={cn(
-          "min-h-screen bg-background font-body antialiased",
-          poppins.variable,
-          ptSans.variable
-        )}
-      >
-        {children}
-        <Toaster />
-      </body>
-    </html>
+    <div className="flex h-screen bg-gray-900 text-white">
+      <aside className="w-64 bg-gray-800 p-4">
+        <div className="flex items-center gap-2 mb-8">
+          <Logo />
+          <span className="text-lg font-semibold">CondoAdmin</span>
+        </div>
+        <nav>
+          <ul>
+            <li>
+              <Link href="/dashboard" className={`flex items-center gap-2 p-2 rounded ${pathname === '/dashboard' ? 'bg-blue-600' : ''}`}>
+                <i data-lucide="layout-dashboard"></i> Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/clientes" className={`flex items-center gap-2 p-2 rounded ${pathname === '/clientes' ? 'bg-blue-600' : ''}`}>
+                <i data-lucide="users"></i> Clientes
+              </Link>
+            </li>
+            {/* Add other links here */}
+          </ul>
+        </nav>
+      </aside>
+      <div className="flex-1 flex flex-col">
+        <header className="bg-gray-800 p-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold">Panel de Administración</h1>
+          <span>¡Bienvenido, Howard!</span>
+        </header>
+        <main className="flex-1 p-8">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

@@ -1,17 +1,16 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
 import AppLayout from './layout';
 import Link from 'next/link';
 
-// Definir el tipo para un cliente
-interface Client {
+// Definir la interfaz para un Cliente
+interface Client extends DocumentData {
   id: string;
   nombre: string;
   direccion?: string;
   unitCount: number;
-  // Añade aquí otros campos que esperas de un cliente
 }
 
 export default function AdminPanel() {
@@ -33,7 +32,7 @@ export default function AdminPanel() {
             };
           })
         );
-        setClients(clientsData);
+        setClients(clientsData as Client[]);
       } catch (error) {
         console.error("Error fetching clients: ", error);
       }
